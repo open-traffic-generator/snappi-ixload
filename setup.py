@@ -11,7 +11,7 @@ version = "0.0.1"
 base_dir = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(base_dir, "readme.md")) as fd:
     long_description = fd.read()
-
+print(setuptools.find_packages())
 setuptools.setup(
     name=pkg_name,
     version=version,
@@ -33,12 +33,11 @@ setuptools.setup(
     keywords="snappi ixload testing open traffic generator automation",
     include_package_data=True,
     packages=setuptools.find_packages(),
+    
     python_requires=">=2.7, <4",
     install_requires=["requests"],
     extras_require={
         "testing": [
-            "snappi==0.9.1",
-            "snappi_convergence==0.4.1",
             "pytest",
             "mock",
             "dpkt==1.9.4",
