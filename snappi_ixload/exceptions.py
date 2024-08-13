@@ -1,7 +1,7 @@
 #import errors as err
 import sys
 import traceback
-sys.path.insert(0, "c:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi\\artifacts\\snappi")
+#sys.path.insert(0, "c:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi\\artifacts\\snappi")
 import snappi
 
 class Snappil47Exception(Exception): 
@@ -38,7 +38,7 @@ class Snappil47Exception(Exception):
         return self._status_code
     
     def process_exception(self):
-        import pdb;pdb.set_trace()
+        #import pdb;pdb.set_trace()
         if isinstance(self._args[0].args, tuple) and len(self._args[0].args) == 1:
             if "Max retries exceeded" in str(self._args[0].args[0]):
                 self._status_code= 500

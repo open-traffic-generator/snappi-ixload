@@ -55,19 +55,16 @@ class port(object):
         '''
         
         '''
-        try:
-            active_test_url = "%s/ixload/test/activeTest" % (self._api._ixload)
-            payload = {"enableForceOwnership": "true"}
-            response = self._api._request('PATCH', active_test_url, payload)
-            url = self._api._config_url.get(ip_name)
-            url = self._api.common.get_community_url(url)
-            port_list_url = url + "network/portList"
-            chassis_id = 1
-            chassis_ip, card_id, port_id = location.split("/")
-            payload = {"chassisId": chassis_id, "cardId": card_id, "portId": port_id}
+        active_test_url = "%s/ixload/test/activeTest" % (self._api._ixload)
+        payload = {"enableForceOwnership": "true"}
+        self._api._request('PATCH', active_test_url, payload)
+        url = self._api._config_url.get(ip_name)
+        url = self._api.common.get_community_url(url)
+        port_list_url = url + "network/portList"
+        chassis_id = 1
+        chassis_ip, card_id, port_id = location.split("/")
+        payload = {"chassisId": chassis_id, "cardId": card_id, "portId": port_id}
+        #import pdb;pdb.set_trace()
+        self._api._request('POST', port_list_url, payload)
             
-            response = self._api._request('POST', port_list_url, payload)
-        except Exception as err:
-            #self.logger.info(f"error:{err}")
-            raise Exception(str(err))
             

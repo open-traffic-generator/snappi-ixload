@@ -1,7 +1,6 @@
 import sys
 #sys.path.append("C:\\Users\\waseebai\\Documents\\GitHub\\snappi\\artifacts\\snappi")
-#sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
-
+#sys.path.insert(0, "c:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi\\artifacts\\snappi")
 
 import snappi
 
@@ -239,7 +238,6 @@ get1.page = "./1b.html"
 (delete1,) = delete_a.delete.delete()
 delete1.destination = "Traffic2_HTTPServer1:80" 
 delete1.page = "./1b.html"
-
 
 
 response = api.set_config(config)

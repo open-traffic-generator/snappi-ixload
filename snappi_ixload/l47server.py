@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify, Response
 #from exceptions import Snappil47Exception
 import sys
-sys.path.insert(0, "c:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi\\artifacts\\snappi")
+#sys.path.insert(0, "c:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi\\artifacts\\snappi")
+#sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
 
 import snappi
 
@@ -11,7 +12,7 @@ global CONFIG
 CONFIG = snappi.Config()
 CS = snappi.ControlState()
 GM = snappi.MetricsRequest()
-sys.path.append("C:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi-ixload")
+#sys.path.append("C:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi-ixload")
 from snappi_ixload import ixloadapi
 API = ixloadapi.Api(host="localhost", version="10.00.0.152")
 
@@ -100,3 +101,10 @@ def get_metrics():
 # main driver function
 if __name__ == "__main__":
     app.run()
+    #run_server()
+
+#from snappi_ixload import l47server as x
+
+#x.run_server()
+
+

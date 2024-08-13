@@ -50,15 +50,6 @@ def test():
     #         ' --cov-report html:cov_report',
     #     ]
     args = [
-        '--location="https://otg-novus100g.lbj.is.keysight.com:5000"',
-        (
-            '--ports="otg-novus100g.lbj.is.keysight.com;1;1'
-            " otg-novus100g.lbj.is.keysight.com;1;2"
-            " otg-novus100g.lbj.is.keysight.com;1;5"
-            ' otg-novus100g.lbj.is.keysight.com;1;6"'
-        ),
-        "--ext=ixnetwork",
-        "--speed=speed_100_gbps",
         "tests",
         '-m "not e2e and not l1_manual and not uhd"',
         "--cov=./snappi_ixnetwork --cov-report term"
@@ -101,6 +92,7 @@ def dist():
 
 def install():
     wheel = "{}-{}-py2.py3-none-any.whl".format(*pkg())
+    run ( [ "{} -m pip install snappi/snappi-1.6.2-py2.py3-none-any.whl".format(py())] )
     run(
         [
             "{} -m pip install --upgrade --force-reinstall {}[testing]".format(
@@ -109,6 +101,25 @@ def install():
         ]
     )
 
+def generate_checksum(file):
+    hash_sha256 = hashlib.sha256()
+    with open(file, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_sha256.update(chunk)
+    return hash_sha256.hexdigest()
+
+
+def generate_distribution_checksum():
+    tar_name = "{}-{}.tar.gz".format(*pkg())
+    tar_file = os.path.join("dist", tar_name)
+    tar_sha = os.path.join("dist", tar_name + ".sha.txt")
+    with open(tar_sha, "w") as f:
+        f.write(generate_checksum(tar_file))
+    wheel_name = "{}-{}-py2.py3-none-any.whl".format(*pkg())
+    wheel_file = os.path.join("dist", wheel_name)
+    wheel_sha = os.path.join("dist", wheel_name + ".sha.txt")
+    with open(wheel_sha, "w") as f:
+        f.write(generate_checksum(wheel_file))
 
 def release():
     run(
@@ -237,25 +248,11 @@ def run(commands):
 def get_workflow_id():
     import requests
 
-    cmd = "https://api.github.com/repos/open-traffic-generator/snappi-ixnetwork/actions/runs"
+    cmd = "https://api.github.com/repos/open-traffic-generator/snappi-ixload/actions/runs"
     res = requests.get(cmd)
     workflow_id = res.json()["workflow_runs"][0]["workflow_id"]
     return workflow_id
 
-
-def check_release_flag(release_flag=None, release_version=None):
-    if release_flag == '1':
-        with open("setup.py") as f:
-            out = f.read()
-            snappi_convergence = re.findall(r"\"snappi_convergence==(.+)\"",out)[0]
-        release_version = release_version.replace('v', "")
-        with open("version.txt", "w+") as f:
-            f.write("version: {}\n".format(release_version))
-            f.write("snappi_convergence: {}\n".format(snappi_convergence))
-    else:
-        workflow_id = get_workflow_id()
-        with open("version.txt", "w+") as f:
-            f.write("workflow_id: {}".format(workflow_id))
 
 
 def install_requests(path):
