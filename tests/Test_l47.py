@@ -7,8 +7,8 @@ import snappi
 api = snappi.api(location="http://127.0.0.1:5000", verify=False)
 config = api.config()
 
-port_1 = config.ports.port(name="p1", location="tomini.buh.is.keysight.com/1/1")[-1]
-port_2 = config.ports.port(name="p2", location="tomini.buh.is.keysight.com/2/1")[-1]
+port_1 = config.ports.port(name="p1", location="amit.buh.is.keysight.com/1/1")[-1]
+port_2 = config.ports.port(name="p2", location="amit.buh.is.keysight.com/1/2")[-1]
 
 (d1, d2) = config.devices.device(name="d1").device(name="d2")
 (e1,) = d1.ethernets.ethernet(name="d1.e1")

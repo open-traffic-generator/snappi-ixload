@@ -22,7 +22,7 @@ class scenarios(object):
         4) set /vport/l1Config/... properties using the corrected /vport -type
         5) connectPorts to use new l1Config settings and clearownership
         """
-        import pdb;pdb.set_trace()
+        #import pdb;pdb.set_trace()
         self._scenarios_config = self._api.devices
         with Timer(self._api, "Scenario Configuration"):
             self._create_scenarios()

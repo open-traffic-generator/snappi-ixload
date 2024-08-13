@@ -1,14 +1,15 @@
 import sys
 #sys.path.append("C:\\Users\\waseebai\\Documents\\GitHub\\snappi\\artifacts\\snappi")
-sys.path.insert(0, "c:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi\\artifacts\\snappi")
+#sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
+
 
 import snappi
 
 api = snappi.api(location="http://127.0.0.1:5000", verify=False)
 config = api.config()
 
-port_1 = config.ports.port(name="p1", location="tomini.buh.is.keysight.com/1/1")[-1]
-port_2 = config.ports.port(name="p2", location="tomini.buh.is.keysight.com/2/1")[-1]
+port_1 = config.ports.port(name="p1", location="amit.buh.is.keysight.com/1/1")[-1]
+port_2 = config.ports.port(name="p2", location="amit.buh.is.keysight.com/1/2")[-1]
 
 (d1, d2) = config.devices.device(name="d1").device(name="d2")
 (e1,) = d1.ethernets.ethernet(name="d1.e1")
@@ -239,26 +240,6 @@ get1.page = "./1b.html"
 delete1.destination = "Traffic2_HTTPServer1:80" 
 delete1.page = "./1b.html"
 
-(tp1,) = config.trafficprofile.trafficprofile()
-#traffic_profile = config.TrafficProfiles.TrafficProfile(name = "traffic_profile_1")
-tp1.app = [http_1.name, http_2.name] # traffic_profile_cps.app - "app" using it for reference can be some generic name for traffic profile on which traffic has to flow
-
-tp1.objective_type = ["CPS", "simulation_user"]
-tp1.objective_value = [100,100]
-(segment1,segment2) = tp1.segment.segment().segment()
-segment1.name = "Linear segment1"
-segment1.start = 0
-segment1.duration = 10
-segment1.rate = 10
-segment1.target = 100
-segment2.name = "Linear segment2"
-segment2.start = 0
-segment2.duration = 10
-segment2.rate = 10
-segment2.target = 100
-tp1.timeline = [segment1.name, segment2.name]
-obj1 = tp1.objectives.concurrent_connections
-obj1.ramp_down_time = 100
 
 
 response = api.set_config(config)

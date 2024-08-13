@@ -6,7 +6,8 @@ import logging
 from collections import namedtuple
 #import sys
 #sys.path.append("C:\\Users\\waseebai\\Documents\\GitHub\\snappi\\artifacts\\snappi")
-sys.path.insert(0, "c:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi\\artifacts\\snappi")
+sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
+#sys.path.insert(0, "c:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi\\artifacts\\snappi")
 import snappi
 import snappi_ixload.ixrestutils as http_transport
 from snappi_ixload.interface import interfaces
@@ -59,6 +60,7 @@ class Api(snappi.Api):
         self.common = Common()
         self.http_cl = client_config(self)
         self.http_sr = server_config(self)
+        #import pdb;pdb.set_trace()
         self.port = port(self)
         self._log_level = (
             logging.INFO
@@ -191,16 +193,17 @@ class Api(snappi.Api):
             Apply configs
         """
         
-        url = "%s/ixload/test/operations/saveAs" % (self._ixload)
-        payload = {"fullPath":"c:/Users/waseebai/Documents/project/test_snappi_l471.rxf", "overWrite": 1}
+        #url = "%s/ixload/test/operations/saveAs" % (self._ixload)
+        #payload = {"fullPath":"c:/Users/waseebai/Documents/project/test_snappi_l471.rxf", "overWrite": 1}
+        #reply = self._request('POST', url, payload, option=1)
+        #self._wait_for_action_to_finish(reply, url)
+        url = self._ixload + "ixload/test/operations/applyConfiguration"
+        payload = {}
         reply = self._request('POST', url, payload, option=1)
+        if not reply.ok:
+            raise Exception(reply.text)
+        self.logger.info("Cnfiguration applied :%s" % (reply))
         self._wait_for_action_to_finish(reply, url)
-        # url = self._ixload + "ixload/test/operations/applyConfiguration"
-        # payload = {}
-        # reply = self._request('POST', url, payload, option=1)
-        # if not reply.ok:
-        #     raise Exception(reply.text)
-        # self._wait_for_action_to_finish(reply, url)
 
     def run_test(self):
         """

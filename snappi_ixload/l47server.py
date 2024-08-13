@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, Response
 #from exceptions import Snappil47Exception
 import sys
 #sys.path.insert(0, "c:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi\\artifacts\\snappi")
+#sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
 
 import snappi
 
@@ -102,8 +103,8 @@ if __name__ == "__main__":
     app.run()
     #run_server()
 
-from snappi_ixload import l47server as x
+#from snappi_ixload import l47server as x
 
-x.run_server()
+#x.run_server()
 
 
