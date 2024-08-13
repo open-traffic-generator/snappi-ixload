@@ -18,7 +18,7 @@ setuptools.setup(
     description="The Snappi Ixload Open Traffic Generator Python Package",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/open-traffic-generator/snappi-ixnetwork",
+    url="https://github.com/open-traffic-generator/snappi-ixload",
     author="waseembaig",
     author_email="waseem.baig@keysight.com",
     license="MIT",
