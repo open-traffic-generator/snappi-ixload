@@ -34,24 +34,12 @@ jobs:
           path: |
             dist
             snappi_ixload
-      - name: Check tag for current version
-        uses: mukunku/tag-exists-action@v1.0.0
-        id: check_tag
-        with:
-          tag: ${{ steps.get_version.outputs.version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish package
-        if: github.ref == 'refs/heads/main' && steps.check_tag.outputs.exists == 'false'
-        run: |
-          PYPI_USERNAME=__token__ PYPI_PASSWORD=${{ secrets.PYPI_API_TOKEN }} python do.py release
-      - name: Create release and publish artifacts
-        if: github.ref == 'refs/heads/main' && steps.check_tag.outputs.exists == 'false'
-        uses: ncipollo/release-action@v1
+        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
         with:
-          artifacts: "dist/*,models-release,*.proto"
-          tag: ${{ steps.get_version.outputs.version }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          verbose: true
   python_tests:
     needs: build
     runs-on: ubuntu-20.04
