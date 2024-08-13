@@ -202,7 +202,7 @@ class Api(snappi.Api):
         reply = self._request('POST', url, payload, option=1)
         if not reply.ok:
             raise Exception(reply.text)
-        self.logger.info("Cnfiguration applied :%s" % (reply))
+        self.logger.info("Cofiguration applied :%s" % (reply))
         self._wait_for_action_to_finish(reply, url)
 
     def run_test(self):
