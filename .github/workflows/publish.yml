@@ -28,6 +28,35 @@ jobs:
         run: |
           python do.py dist
 
+  python_tests:
+    needs: build
+    runs-on: ubuntu-20.04
+    strategy:
+      max-parallel: 6
+      matrix:
+        python-version: [3.9]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/download-artifact@v2
+        with:
+          name: generated-artifacts
+      - name: Install dependencies
+        run: |
+          python do.py setup
+          python do.py install
+      - name: Display structure of downloaded files
+        run: ls -R
+      #- name: Run python tests
+      #  run: |
+      #    sudo python do.py test
+      
   publish_python_package:
     if: github.ref == 'refs/heads/main'
     needs: [python_tests]
@@ -85,31 +114,4 @@ jobs:
               sha: "${{ steps.get_sha.outputs.value }}"
             })
 
-  python_tests:
-    needs: build
-    runs-on: ubuntu-20.04
-    strategy:
-      max-parallel: 6
-      matrix:
-        python-version: [3.7, 3.8, 3.9]
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.head_ref }}
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - uses: actions/download-artifact@v2
-        with:
-          name: generated-artifacts
-      - name: Install dependencies
-        run: |
-          python do.py setup
-          python do.py install
-      - name: Display structure of downloaded files
-        run: ls -R
-      #- name: Run python tests
-      #  run: |
-      #    sudo python do.py test
+  
