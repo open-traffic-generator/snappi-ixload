@@ -28,12 +28,12 @@ jobs:
       - name: Build distribution
         run: |
           python do.py dist
-          - name: Install package on clean env
-          run: |
-            rm -rf .env
-            ${{steps.path.outputs.pythonv}} do.py setup
-            ${{steps.path.outputs.pythonv}} do.py install
-            ${{steps.path.outputs.pythonv}} do.py init
+      - name: Install package on clean env
+        run: |
+          rm -rf .env
+          ${{steps.path.outputs.pythonv}} do.py setup
+          ${{steps.path.outputs.pythonv}} do.py install
+          ${{steps.path.outputs.pythonv}} do.py init
       - name: Get package version
         id: get_version
         run: |
