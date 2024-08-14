@@ -93,13 +93,13 @@ def dist():
 def install():
     wheel = "{}-{}-py2.py3-none-any.whl".format(*pkg())
     run ( [ "{} -m pip install snappi/snappi-1.6.2-py2.py3-none-any.whl".format(py())] )
-    run(
-        [
-            "{} -m pip install --upgrade --force-reinstall {}[testing]".format(
-                py(), os.path.join("dist", wheel)
-            ),
-        ]
-    )
+    #run(
+    #    [
+    #        "{} -m pip install --upgrade --force-reinstall {}[testing]".format(
+    #            py(), os.path.join("dist", wheel)
+    #        ),
+    #    ]
+    #)
 
 def generate_checksum(file):
     hash_sha256 = hashlib.sha256()
