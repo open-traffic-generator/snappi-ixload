@@ -120,6 +120,7 @@ def generate_distribution_checksum():
     wheel_sha = os.path.join("dist", wheel_name + ".sha.txt")
     with open(wheel_sha, "w") as f:
         f.write(generate_checksum(wheel_file))
+#addimg release
 
 def release():
     run(
