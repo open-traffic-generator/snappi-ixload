@@ -6,7 +6,7 @@ import logging
 from collections import namedtuple
 #import sys
 #sys.path.append("C:\\Users\\waseebai\\Documents\\GitHub\\snappi\\artifacts\\snappi")
-sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
+#sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
 #sys.path.insert(0, "c:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi\\artifacts\\snappi")
 import snappi
 import snappi_ixload.ixrestutils as http_transport
@@ -202,7 +202,7 @@ class Api(snappi.Api):
         reply = self._request('POST', url, payload, option=1)
         if not reply.ok:
             raise Exception(reply.text)
-        self.logger.info("Cnfiguration applied :%s" % (reply))
+        self.logger.info("Cofiguration applied :%s" % (reply))
         self._wait_for_action_to_finish(reply, url)
 
     def run_test(self):
