@@ -24,6 +24,9 @@ jobs:
         run: |
           python do.py setup
           python do.py init
+      - name: Build distribution
+        run: |
+          python do.py dist
       - name: Checkout source
         uses: actions/checkout@v2
         with:
