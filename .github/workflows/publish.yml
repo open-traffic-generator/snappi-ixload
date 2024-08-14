@@ -22,57 +22,18 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
+          rm -rf .env
           python do.py setup
           python do.py init
       - name: Build distribution
         run: |
           python do.py dist
-
-  python_tests:
-    needs: build
-    runs-on: ubuntu-20.04
-    strategy:
-      max-parallel: 6
-      matrix:
-        python-version: [3.9]
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.head_ref }}
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - uses: actions/download-artifact@v2
-        with:
-          path: dist
-      - name: Install dependencies
-        run: |
-          python do.py setup
-          python do.py install
-      - name: Display structure of downloaded files
-        run: ls -R
-      #- name: Run python tests
-      #  run: |
-      #    sudo python do.py test
-
-  publish_python_package:
-    if: github.ref == 'refs/heads/main'
-    needs: [python_tests]
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.head_ref }}
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.6
-      - uses: actions/download-artifact@v2
-        with:
-          path: dist
+          - name: Install package on clean env
+          run: |
+            rm -rf .env
+            ${{steps.path.outputs.pythonv}} do.py setup
+            ${{steps.path.outputs.pythonv}} do.py install
+            ${{steps.path.outputs.pythonv}} do.py init
       - name: Get package version
         id: get_version
         run: |
@@ -88,28 +49,3 @@ jobs:
         if: github.ref == 'refs/heads/main' && steps.check_tag.outputs.exists == 'false'
         run: |
           PYPI_USERNAME=__token__ PYPI_PASSWORD=${{ secrets.PYPI_API_TOKEN }} python do.py release
-      - name: Create release and publish artifacts
-        if: github.ref == 'refs/heads/main' && steps.check_tag.outputs.exists == 'false'
-        uses: ncipollo/release-action@v1
-        with:
-          artifacts: "dist/*,models-release,*.proto"
-          tag: ${{ steps.get_version.outputs.version }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: get_sha value from file
-        id: get_sha
-        run: |
-          echo "::set-output name=value::$(cat store_sha_file)"
-      - name: Create tag for gosnappi
-        if: github.ref == 'refs/heads/main' && steps.check_tag.outputs.exists == 'false'
-        uses: actions/github-script@v3
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            github.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: "refs/tags/gosnappi/${{ steps.get_version.outputs.version }}",
-              sha: "${{ steps.get_sha.outputs.value }}"
-            })
-
-  
