@@ -31,9 +31,9 @@ jobs:
       - name: Install package on clean env
         run: |
           rm -rf .env
-          ${{steps.path.outputs.pythonv}} do.py setup
-          ${{steps.path.outputs.pythonv}} do.py install
-          ${{steps.path.outputs.pythonv}} do.py init
+          python do.py setup
+          python  do.py install
+          python do.py init
       - name: Get package version
         id: get_version
         run: |
