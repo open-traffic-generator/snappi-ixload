@@ -24,22 +24,32 @@ jobs:
         run: |
           python do.py setup
           python do.py init
-      - name: Build distribution
+      - name: Checkout source
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+      - uses: actions/download-artifact@v2
+        with:
+          path: dist
+      - name: Get package version
+        id: get_version
         run: |
-          python do.py dist
-      - name: Archive generated artifacts
-        uses: actions/upload-artifact@v2
+          echo "::set-output name=version::v$(python do.py version)"
+      - name: Check tag for current version
+        uses: mukunku/tag-exists-action@v1.0.0
+        id: check_tag
         with:
-          name: generated-artifacts
-          path: |
-            dist
-            snappi_ixload
+          tag: ${{ steps.get_version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          verbose: true
+        if: github.ref == 'refs/heads/main' && steps.check_tag.outputs.exists == 'false'
+        run: |
+          PYPI_USERNAME=__token__ PYPI_PASSWORD=${{ secrets.PYPI_API_TOKEN }} python do.py release
   python_tests:
     needs: build
     runs-on: ubuntu-20.04
