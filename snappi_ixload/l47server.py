@@ -12,7 +12,7 @@ global CONFIG
 CONFIG = snappi.Config()
 CS = snappi.ControlState()
 GM = snappi.MetricsRequest()
-#sys.path.append("C:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi-ixload")
+#sys.path.append("C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi-ixload")
 from snappi_ixload import ixloadapi
 API = ixloadapi.Api(host="localhost", version="10.00.0.152")
 

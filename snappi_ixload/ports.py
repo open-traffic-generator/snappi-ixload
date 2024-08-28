@@ -48,8 +48,7 @@ class port(object):
         response = self._api._request('POST', chassis_list_url, payload)
         refresh_connection_url = "%s/%s/operations/refreshConnection" % (chassis_list_url, response)
         response = self._api._request('POST', refresh_connection_url, {})
-        time.sleep(10)
-        #self._api._wait_for_action_to_finish(response, refresh_connection_url)
+        self._api._perform_generic_operation(refresh_connection_url, {})
     
     def _assign_ports(self, location, ip_name):
         '''
@@ -64,7 +63,6 @@ class port(object):
         chassis_id = 1
         chassis_ip, card_id, port_id = location.split("/")
         payload = {"chassisId": chassis_id, "cardId": card_id, "portId": port_id}
-        #import pdb;pdb.set_trace()
         self._api._request('POST', port_list_url, payload)
             
             

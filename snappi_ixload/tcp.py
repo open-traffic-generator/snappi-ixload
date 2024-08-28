@@ -22,12 +22,14 @@ class tcp_config(Common):
         "prefix": "prefix",
         "name" : "name"
     }
+    _TCP_EN = {
+        "adjust_tcp_buffers" : "adjust_tcp_buffers",
+    }
     _TCP = {
         "keep_alive_time": "tcp_keepalive_time",
         "keep_alive_interval" : "tcp_keepalive_intvl",
         "receive_buffer_size" : "tcp_rmem_default",
         "transmit_buffer_size" : "tcp_wmem_default",
-        "adjust_tcp_buffers" : "adjust_tcp_buffers",
         "retransmission_minimum_timeout" : "tcp_rto_min",
         "retransmission_maximum_timeout" : "tcp_rto_max",
         "minimum_source_port" : "tcp_port_min",
@@ -67,7 +69,7 @@ class tcp_config(Common):
         "low_latency" : "tcp_low_latency",
         "minimum_rmem" : "tcp_rmem_min",
         "window_scale" : "tcp_adv_win_scale",
-        "wmem_default" : "tcp_wmem_default",
+        #"wmem_default" : "tcp_wmem_default",
         "minimum_wmem" : "tcp_wmem_min",
         "stdurg" : "tcp_stdurg",
         "maximum_syn_backlog": "tcp_max_syn_backlog",
@@ -80,7 +82,7 @@ class tcp_config(Common):
         "moderate_receive_buffer" : "tcp_moderate_rcvbuf",
         "no_metrics_save" : "tcp_no_metrics_save",
         "retrans_collapse" : "tcp_retrans_collapse",
-        "rmem_default" : "tcp_rmem_default",
+        #"rmem_default" : "tcp_rmem_default",
         "mem_high": "tcp_mem_high",
         "vegas_gamma" : "tcp_vegas_gamma",
         "fack": "tcp_fack",
@@ -89,6 +91,7 @@ class tcp_config(Common):
         "app_win": "tcp_app_win",
         "keep_alive_probes" : "tcp_keepalive_probes"
     }
+    
         
     def __init__(self, ixloadapi):
         self._api = ixloadapi
@@ -122,6 +125,8 @@ class tcp_config(Common):
                 if response_list[index]['itemType'] == 'TCPPlugin':
                     tcp_url = "%s/%s" % (tcp_child_url, response_list[index]['objectID'])
                     self._api.logger.info("tcp_url:%s" % (tcp_url))
+                    payload = self._api._set_payload(tcp, tcp_config._TCP_EN)
+                    response = self._api._request('PATCH', tcp_url, payload)
                     payload = self._api._set_payload(tcp, tcp_config._TCP)
                     response = self._api._request('PATCH', tcp_url, payload)
                     self._api._config_url[tcp.name] = tcp_url

@@ -60,9 +60,8 @@ t1.ip_interface_name = ip1.name
 t1.adjust_tcp_buffers = False
 t1.keep_alive_time = 7000
 t1.keep_alive_interval = 60
-t1.receive_buffer_size = 8065
-t1.transmit_buffer_size = 8065
-t1.adjust_tcp_buffers = True
+t1.receive_buffer_size = 8062
+t1.transmit_buffer_size = 8062
 t1.retransmission_minimum_timeout = 180
 t1.retransmission_maximum_timeout = 1000
 t1.minimum_source_port = 80
@@ -100,7 +99,6 @@ t1.maximum_time_wait_buckets = 1800
 t1.low_latency = 0
 t1.minimum_rmem = 4096
 t1.window_scale = 2
-t1.wmem_default = 262144
 t1.minimum_wmem = 4096
 t1.stdurg = False
 t1.maximum_syn_backlog = 1024
@@ -113,7 +111,6 @@ t1.mem_pressure = 32768
 t1.moderate_receive_buffer = 0
 t1.no_metrics_save = True
 t1.retrans_collapse = True
-t1.rmem_default = 262144
 t1.mem_high = 49152
 t1.vegas_gamma = 2
 t1.fack = True
@@ -239,16 +236,75 @@ get1.page = "./1b.html"
 delete1.destination = "Traffic2_HTTPServer1:80" 
 delete1.page = "./1b.html"
 
+tp = config.trafficprofile.trafficprofile()
+#tp[0].objective_type = ["simulated_user", "throughput_kbps", "throughput_mbps", "concurrent_connections", "connection_per_sec", "transactions_per_sec","connection_attempts_per_sec"]
+tp[0].objective_type = ["throughput_mbps"]
+tp[0].objective_value = [102]
+tp[0].timeline = ['Timeline1']
+
+obj_type = tp[0].objectives.objective()
+# obj_type[0].throughput_kbps.enable_controlled_user_adjustment = True
+# obj_type[0].throughput_kbps.sustain_time=5
+# obj_type[0].throughput_kbps.ramp_down_time = 10
+# obj_type[0].simulated_user.ramp_up_value = 15
+# obj_type[0].simulated_user.sustain_time = 5
+# obj_type[0].simulated_user.ramp_down_time =11
+# obj_type[0].simulated_user.enable_controlled_user_adjustment = True
+# obj_type[0].concurrent_connections.enable_controlled_user_adjustment = True
+# obj_type[0].concurrent_connections.sustain_time=6
+# obj_type[0].concurrent_connections.ramp_down_time=12
+# obj_type[0].concurrent_connections.ramp_down_value=10
+# obj_type[0].connection_per_sec.enable_controlled_user_adjustment = True
+# obj_type[0].connection_per_sec.sustain_time=14
+# obj_type[0].connection_per_sec.ramp_down_time=12
+# obj_type[0].transactions_per_sec.enable_controlled_user_adjustment = True
+# obj_type[0].transactions_per_sec.sustain_time=10
+# obj_type[0].transactions_per_sec.ramp_down_time=11
+# obj_type[0].connection_attempts_per_sec.enable_controlled_user_adjustment = True
+# obj_type[0].connection_attempts_per_sec.sustain_time=12
+# obj_type[0].connection_attempts_per_sec.ramp_down_time=13
+obj_type[0].throughput_mbps.enable_controlled_user_adjustment = True
+obj_type[0].throughput_mbps.sustain_time=6
+obj_type[0].throughput_mbps.ramp_down_time = 11
+
+
+(segment1,segment2) = tp[0].segment.segment().segment()
+segment1.name = "Linear segment1"
+segment1.start = 0
+segment1.duration = 10
+segment1.rate = 10
+segment1.target = 100
+
+# obj_type = tp[0].objectives.objective()
+# obj_type[0].simulated_user.ramp_up_value = 15
+# obj_type[0].simulated_user.sustain_time = 5
+# obj_type[0].simulated_user.ramp_down_time =11
+# obj_type[0].throughput_kbps.enable_controlled_user_adjustment = True
+# obj_type[0].throughput_kbps.sustain_time=5
+# obj_type[0].throughput_kbps.ramp_down_time = 10
+# obj_type[0].throughput_mbps.enable_controlled_user_adjustment = True
+# obj_type[0].throughput_mbps.sustain_time=6
+# obj_type[0].throughput_mbps.ramp_down_time = 11
+# obj_type[0].concurrent_connections.enable_controlled_user_adjustment = True
+# obj_type[0].concurrent_connections.sustain_time=6
+# obj_type[0].concurrent_connections.ramp_down_time=12
+# obj_type[0].concurrent_connections.ramp_down_value=13
+# obj_type[0].connection_per_sec.enable_controlled_user_adjustment = True
+# obj_type[0].connection_per_sec.sustain_time=14
+# obj_type[0].connection_per_sec.ramp_down_time=12
+#obj_type[0].connection_per_sec.ramp_down_value=15
+
+
 
 response = api.set_config(config)
 print(response)
 
-cs = api.control_state()
-cs.app.state = 'start' #cs.app.state.START 
-response1 = api.set_control_state(cs) 
-print(response1)
-cs.app.state = 'stop' #cs.app.state.START 
-api.set_control_state(cs)            
+#cs = api.control_state()
+#cs.app.state = 'start' #cs.app.state.START 
+#response1 = api.set_control_state(cs) 
+#print(response1)
+#cs.app.state = 'stop' #cs.app.state.START 
+#api.set_control_state(cs)            
 
 
 
