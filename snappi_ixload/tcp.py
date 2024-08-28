@@ -26,7 +26,6 @@ class tcp_config(Common):
         "adjust_tcp_buffers" : "adjust_tcp_buffers",
     }
     _TCP = {
-        "adjust_tcp_buffers" : "adjust_tcp_buffers",
         "keep_alive_time": "tcp_keepalive_time",
         "keep_alive_interval" : "tcp_keepalive_intvl",
         "receive_buffer_size" : "tcp_rmem_default",
@@ -126,8 +125,9 @@ class tcp_config(Common):
                 if response_list[index]['itemType'] == 'TCPPlugin':
                     tcp_url = "%s/%s" % (tcp_child_url, response_list[index]['objectID'])
                     self._api.logger.info("tcp_url:%s" % (tcp_url))
+                    payload = self._api._set_payload(tcp, tcp_config._TCP_EN)
+                    response = self._api._request('PATCH', tcp_url, payload)
                     payload = self._api._set_payload(tcp, tcp_config._TCP)
-                    import pdb;pdb.set_trace()
                     response = self._api._request('PATCH', tcp_url, payload)
                     self._api._config_url[tcp.name] = tcp_url
             

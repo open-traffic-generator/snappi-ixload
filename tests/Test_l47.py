@@ -60,9 +60,8 @@ t1.ip_interface_name = ip1.name
 t1.adjust_tcp_buffers = False
 t1.keep_alive_time = 7000
 t1.keep_alive_interval = 60
-t1.receive_buffer_size = 8065
-t1.transmit_buffer_size = 8065
-t1.adjust_tcp_buffers = True
+t1.receive_buffer_size = 8062
+t1.transmit_buffer_size = 8062
 t1.retransmission_minimum_timeout = 180
 t1.retransmission_maximum_timeout = 1000
 t1.minimum_source_port = 80
@@ -296,9 +295,6 @@ segment1.target = 100
 #obj_type[0].connection_per_sec.ramp_down_value=15
 
 
-
-response = api.set_config(config)
-print(response)
 
 response = api.set_config(config)
 print(response)

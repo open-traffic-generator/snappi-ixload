@@ -137,5 +137,7 @@ class interfaces(object):
             response = self._api._request('PATCH', vlan_url, payload)
             payload = self._api._set_payload(vlan, interfaces._VLAN)
             if payload:
+                if 'tpid' in payload.keys():
+                    payload['tpid'] = "0" + payload['tpid']
                 response = self._api._request('PATCH', vlan_url, payload)
                 self._api._config_url[vlan.name] = vlan_url

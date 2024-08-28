@@ -45,7 +45,6 @@ class ipv4(object):
             ipv4_url = ipv4.url
             print(network)
             ethernet_url = ethernet_url.replace('macRangeList', "")
-            import pdb; pdb.set_trace()
             url1, url2 = self._api._get_url(ethernet_url, ipv4_url)
             payload = {"itemType": "IpV4V6Plugin"}
             response = self._api._request('POST', url1, payload)
