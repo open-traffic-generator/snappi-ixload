@@ -5,7 +5,7 @@ import os
 import setuptools
 
 pkg_name = "snappi_ixload"
-version = "0.0.2"
+version = "0.0.3"
 
 # read long description from readme.md
 base_dir = os.path.abspath(os.path.dirname(__file__))
