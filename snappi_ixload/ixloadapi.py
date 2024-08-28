@@ -6,7 +6,7 @@ import logging
 from collections import namedtuple
 #import sys
 #sys.path.append("C:\\Users\\waseebai\\Documents\\GitHub\\snappi\\artifacts\\snappi")
-#sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
+sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
 #sys.path.insert(0, "c:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi\\artifacts\\snappi")
 import snappi
 import snappi_ixload.ixrestutils as http_transport
@@ -18,6 +18,7 @@ from snappi_ixload.logger import setup_ixload_logger
 from snappi_ixload.common import Common
 from snappi_ixload.exceptions import Snappil47Exception
 from snappi_ixload.ports import port
+from snappi_ixload.timeline_objective import objective_config
 #from protocols import protocols
 #from snappi_ixload.chassis import chassis
 #from stats import stats
@@ -60,8 +61,8 @@ class Api(snappi.Api):
         self.common = Common()
         self.http_cl = client_config(self)
         self.http_sr = server_config(self)
-        #import pdb;pdb.set_trace()
         self.port = port(self)
+        self.objective_con = objective_config(self)
         self._log_level = (
             logging.INFO
             if kwargs.get("loglevel") is None
@@ -125,6 +126,7 @@ class Api(snappi.Api):
             self.http_sr.config()
             self.http_cl.config()
             self.port.config()
+            self.objective_con.config()
             self._apply_config()    
         except Exception as err:
             self.logger.info(f"error:{err}")
@@ -144,6 +146,13 @@ class Api(snappi.Api):
     def set_control_state(self, config):
         try:
             if config.app.state == "start":
+                url = self._ixload + "ixload/test/operations/applyConfiguration"
+                payload = {}
+                reply = self._request('POST', url, payload, option=1)
+                if not reply.ok:
+                    raise Exception(reply.text)
+                self.logger.info("Cofiguration applied :%s" % (reply))
+                self._wait_for_action_to_finish(reply, url)
                 url = "%sixload/test/operations/runTest" % (self._ixload)
                 payload = {}
                 
@@ -193,17 +202,17 @@ class Api(snappi.Api):
             Apply configs
         """
         
-        #url = "%s/ixload/test/operations/saveAs" % (self._ixload)
-        #payload = {"fullPath":"c:/Users/waseebai/Documents/project/test_snappi_l471.rxf", "overWrite": 1}
-        #reply = self._request('POST', url, payload, option=1)
-        #self._wait_for_action_to_finish(reply, url)
-        url = self._ixload + "ixload/test/operations/applyConfiguration"
-        payload = {}
+        url = "%s/ixload/test/operations/saveAs" % (self._ixload)
+        payload = {"fullPath":"C:\\ProgramData\\Ixia\\IxLoadGateway\\snappi_test.rxf", "overWrite": 1}
         reply = self._request('POST', url, payload, option=1)
-        if not reply.ok:
-            raise Exception(reply.text)
-        self.logger.info("Cofiguration applied :%s" % (reply))
         self._wait_for_action_to_finish(reply, url)
+        # url = self._ixload + "ixload/test/operations/applyConfiguration"
+        # payload = {}
+        # reply = self._request('POST', url, payload, option=1)
+        # if not reply.ok:
+        #     raise Exception(reply.text)
+        # self.logger.info("Cofiguration applied :%s" % (reply))
+        # self._wait_for_action_to_finish(reply, url)
 
     def run_test(self):
         """
@@ -300,6 +309,19 @@ class Api(snappi.Api):
         data = json.dumps(payload)
         response = self.connection._request(method=method, url= url, data=data, params=params, headers=headers, option=option)
         return response
+    
+    def _perform_generic_operation(self, url, payload_dict):
+        '''
+            This will perform a generic operation on the given url, it will wait for it to finish.
+            Args:
+            - url is the address of where the operation will be performed
+            - payload_dict is the python dict with the parameters for the operation
+        '''
+        reply = self.connection.http_post(url=url, data=payload_dict)
+        if not reply.ok:
+            raise Exception(reply.text)
+        self._wait_for_action_to_finish(reply, url)
+        return reply
     
     def _wait_for_action_to_finish(self, reply_obj, action_url):
         '''
