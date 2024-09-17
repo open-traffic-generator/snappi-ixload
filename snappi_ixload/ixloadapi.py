@@ -4,7 +4,7 @@ import sys
 import logging
 #import ixrestutils as http_transport
 from collections import namedtuple
-#import sys
+import sys
 #sys.path.append("C:\\Users\\waseebai\\Documents\\GitHub\\snappi\\artifacts\\snappi")
 #sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
 #sys.path.insert(0, "c:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi\\artifacts\\snappi")
@@ -19,6 +19,7 @@ from snappi_ixload.common import Common
 from snappi_ixload.exceptions import Snappil47Exception
 from snappi_ixload.ports import port
 from snappi_ixload.timeline_objective import objective_config
+from snappi_ixload.traffic_map import trafficmap_config
 #from protocols import protocols
 #from snappi_ixload.chassis import chassis
 #from stats import stats
@@ -63,6 +64,7 @@ class Api(snappi.Api):
         self.http_sr = server_config(self)
         self.port = port(self)
         self.objective_con = objective_config(self)
+        self.trafficmap = trafficmap_config(self)
         self._log_level = (
             logging.INFO
             if kwargs.get("loglevel") is None
@@ -127,6 +129,7 @@ class Api(snappi.Api):
             self.http_cl.config()
             self.port.config()
             self.objective_con.config()
+            self.trafficmap.config()
             self._apply_config()    
         except Exception as err:
             self.logger.info(f"error:{err}")
@@ -205,7 +208,7 @@ class Api(snappi.Api):
         url = "%s/ixload/test/operations/saveAs" % (self._ixload)
         payload = {"fullPath":"C:/ProgramData/Ixia/IxLoadGateway/snappi_test.rxf", "overWrite": 1}
         reply = self._request('POST', url, payload, option=1)
-        self.logger.info("Cofiguration applied :%s" % (reply))
+        self.logger.info("Cofiguration saved :%s" % (reply))
         self._wait_for_action_to_finish(reply, url)
         # url = self._ixload + "ixload/test/operations/applyConfiguration"
         # payload = {}
