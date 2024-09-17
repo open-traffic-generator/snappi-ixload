@@ -11,7 +11,6 @@ port_1 = config.ports.port(name="p1", location="amit.buh.is.keysight.com/1/2")[-
 port_2 = config.ports.port(name="p2", location="amit.buh.is.keysight.com/2/2")[-1]
 #port_3 = config.ports.port(name="p3", location="tomini.buh.is.keysight.com/2/2")[-1]
 
-
 (d1, d2,) = config.devices.device(name="d1").device(name="d2")
 (e1,) = d1.ethernets.ethernet(name="d1.e1")
 
