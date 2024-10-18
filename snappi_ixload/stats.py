@@ -1,41 +1,84 @@
 import json
 import re
 import time
-from brisk_ixload.timer import Timer
+from timer import Timer
+from datetime import datetime, timedelta
 
-class stats(object):
-    """Transforms OpenAPI objects into IxNetwork objects
-    - Lag to /lag
-    Args
-    ----
-    - ixnetworkapi (Api): instance of the Api class
+class stats_config():
     """
-    
+    """
     def __init__(self, ixloadapi):
-        self._api = ixloadapi
-    
-    def config(self):
-        """Transform config.ports into Ixnetwork.Vport
-        1) delete any vport that is not part of the config
-        2) create a vport for every config.ports[] that is not present in IxNetwork
-        3) set config.ports[].location to /vport -location using resourcemanager
-        4) set /vport/l1Config/... properties using the corrected /vport -type
-        5) connectPorts to use new l1Config settings and clearownership
-        """
-        self._scenarios_config = self._api.brisk_config
-        
+        self._api = ixloadapi 
 
-        with Timer(self._api, "Scenario Configuration"):
-            self._create_scenarios()
-    
-    def _create_scenarios(self):
-        """Add any scenarios to the api server that do not already exist
+    def _get_stats_list(self, req, name, metric_res):
+        self.metric = metric_res
+        if req.choice == "httpclient":
+            self.stat_list = req.httpclient.stat_name
+            all_stats_flag = req.httpclient.all_stats
+            self.metric_http = self.metric.httpclient_metrics
+        else:
+            self.stat_list = req.httpserver.stat_name
+            all_stats_flag = req.httpserver.all_stats
+            self.metric_http = self.metric.httpserver_metrics
+        if all_stats_flag:
+            stats_url = "%s/ixload/stats/%s/availableStats" % (self._api._ixload, name)
+            stats_dict = self._api._request('GET', stats_url, option=1)
+            stats_source_list = [stat['statName'] for stat in stats_dict]
+        else:
+            if not self.stat_list:
+                raise Exception("Please provide stats name list")
+            stats_source_list = [stat for stat in self.stat_list]
+        return stats_source_list
+
+    def get_stats(self, name, metric_obj, metric_res):
         """
-        for scenario in self._scenarios_config:
-            url1, url2 = self._api._get_url(self._api._ixload , scenario.url)
-            payload = {}
-            response = self._api._request('POST', url1, payload)
-            new_url = url1 + response + url2
-            scenario.url = new_url
-            self._create_network(scenario, scenario.url)
-            
+        get_stats - collects the stats information for the test
+        """
+        wait_time = datetime.now()+timedelta(0,300)
+        state = self._api.get_current_state()
+        if state.lower() == 'running' or 'Starting Run':
+            getting_stats = True
+            stats_source_url = "%s/ixload/stats/%s/values" % (self._api._ixload, name)
+            stats_source_list = self._get_stats_list(metric_obj, name, metric_res)
+            collected_timestamps = {}
+            time_stamp_dict = {}
+            for stats in stats_source_list:
+                time_stamp_dict[stats] = {}
+                time_stamp_dict[stats]['time_stamp'] = {}
+                time_stamp_dict[stats]['values'] = []
+            values_dict = self._api._request('GET', stats_source_url, option=1)
+            while getting_stats:
+                if values_dict:
+                    for stats in stats_source_list:
+                        new_time_stamps = [int(timestamp) for timestamp in values_dict.keys() if timestamp not in collected_timestamps.get(stats, [])]
+                        new_time_stamps.sort()
+                        stat_list = []
+                        for timestamp in new_time_stamps:
+                            time_stamp_str = str(timestamp)
+                            if stats in values_dict[time_stamp_str].keys():
+                                for caption, value in values_dict[time_stamp_str].items():
+                                    if caption == stats:
+                                        stat_list.append(str(value))
+                                        key = 'timestamp'+str(new_time_stamps.index(timestamp)+1)
+                                        time_stamp_dict[stats]['time_stamp'].update({key: (timestamp, str(value))})
+                                time_stamp_dict[stats]['values'] = stat_list
+                            else:
+                                raise Exception("Please enter the valid stats-%s is invalid" % stats)
+                    stats_value = time_stamp_dict
+                    getting_stats = False
+                else:
+                    if wait_time < datetime.now():
+                        raise Exception("Cannot Get Stats after 300 seconds.Check the test status")
+                    values_dict = self._api._request('GET', stats_source_url, option=1)
+        else:
+            raise Exception(not "Cannot Get Stats when ActiveTest State - %s" % state)
+        # metric_response
+        for key, value in stats_value.items():
+            index = list(stats_value.keys()).index(key)
+            self.metric_http.metric(name=key)
+            metric_stat = self.metric_http[index].stat_value
+            metric_stat.stat_value(values=value['values'])
+            stat_timestamp = metric_stat[0].timestamp
+            for tmstamp, tmval in value['time_stamp'].items():
+                stat_timestamp.timestamp(timestamp_id=str(tmval[0]), value=str(tmval[1]))
+        return self.metric
