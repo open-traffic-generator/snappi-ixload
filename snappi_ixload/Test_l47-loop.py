@@ -184,7 +184,7 @@ http_2.type_of_service = 0
 http_2.high_perf_with_simulated_user = False		#UDP configs can be mapped http.transport = udp_2.name
 
 (http_server,) = http_2.servers.server()
-http_server.name = "Http1Server1"
+#http_server.name = "Http1Server1"
 http_server.rst_timeout = 100
 http_server.enable_http2 = False
 http_server.port = 80
@@ -217,7 +217,7 @@ delete1.page = "./1b.html"
 # (delete2,) = delete_b.delete.delete()
 # delete2.destination = "Traffic2_Http1Server1:80" 
 # delete2.page = "./1b.html"
-
+import pdb;pdb.set_trace()
 
 
 tp = config.trafficprofile.trafficprofile()

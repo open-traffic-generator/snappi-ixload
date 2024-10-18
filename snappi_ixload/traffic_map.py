@@ -1,7 +1,7 @@
 import json
 import re
 import time
-from snappi_ixload.timer import Timer
+from timer import Timer
 
 
 class trafficmap_config():
@@ -45,7 +45,7 @@ class trafficmap_config():
         """
         for trafficprofile in self._config.trafficprofile:
             url = self._api._config_url.get(http_client.name)
-            if http_client.name == trafficprofile.app[0]:
+            if trafficprofile.trafficmap and http_client.name == trafficprofile.app[0]:
                 for trafficmap in trafficprofile.trafficmap:
                     map_url = "%s/destinations/0" % (url)
                     payload = self._api._set_payload(trafficmap, trafficmap_config._POLICY_CONFIG)
@@ -62,7 +62,7 @@ class trafficmap_config():
                             self._configure_custom_config(customipv6_url, trafficmap, response)
         return
 
-    def _configure_custom_config(self, url, trafficmap, custom_list):    
+    def _configure_custom_config(self, url, trafficmap, custom_list):   
         for custom in trafficmap.custom:
             src_payload = {}
             payload = self._api._set_payload(custom, trafficmap_config._CUSTOM_CONFIG)

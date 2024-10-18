@@ -5,9 +5,9 @@ import logging
 #import ixrestutils as http_transport
 from collections import namedtuple
 import sys
-#sys.path.append("C:\\Users\\waseebai\\Documents\\GitHub\\snappi\\artifacts\\snappi")
+
 #sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
-#sys.path.insert(0, "c:\\Users\\waseebai\\Documents\\project\\snappi_l47\\snappi\\artifacts\\snappi")
+
 import snappi
 import snappi_ixload.ixrestutils as http_transport
 from snappi_ixload.interface import interfaces
@@ -23,7 +23,7 @@ from snappi_ixload.traffic_map import trafficmap_config
 #from protocols import protocols
 #from snappi_ixload.chassis import chassis
 #from stats import stats
-
+from stats import stats_config
 
 class Api(snappi.Api):
     """
@@ -65,6 +65,7 @@ class Api(snappi.Api):
         self.port = port(self)
         self.objective_con = objective_config(self)
         self.trafficmap = trafficmap_config(self)
+        self.stats = stats_config(self)
         self._log_level = (
             logging.INFO
             if kwargs.get("loglevel") is None
@@ -184,22 +185,19 @@ class Api(snappi.Api):
             self.logger.info(f"error:{err}")
             raise Snappil47Exception(err)
         return self._request_detail()
-        
-    def stats(self, config):
-        """Set or update the configuration
-        """
-        try:
-            if isinstance(config, (type(self._config_type),
-                                    str)) is False:
-                raise TypeError(
-                    'The content must be of type Union[Config, str]')
-
-            if isinstance(config, str) is True:
-                config = self._config_type.deserialize(config)
-            self._config = config
-        except Exception as err:
-            print(err)
     
+    def get_metrics(self, req):
+        try:
+            metric_res = self.metrics_response()
+            if req.choice == "httpclient":
+                metric_res=self.stats.get_stats(name="HTTPClient", metric_obj = req, metric_res=metric_res)
+            if req.choice == "httpserver":
+                metric_res=self.stats.get_stats(name="HTTPServer", metric_obj = req, metric_res=metric_res)
+        except Exception as err:
+            self.logger.info(f"error:{err}")
+            raise Snappil47Exception(err)
+        return metric_res
+        
     def _apply_config(self):
         """
             Apply configs

@@ -1,7 +1,7 @@
 import json
 import re
 import time
-from snappi_ixload.timer import Timer
+from timer import Timer
 
 
 class objective_config():
@@ -68,6 +68,7 @@ class objective_config():
     _VALIDATE_RAMP_TYPE = {"users_intervals": _USER_PAYLOAD,
                            "max_pending_user": _MAX_PAYLOAD,
                            "immediate": _IMMEDIATE_PAYLOAD}
+    _objective_value = [100, 100, 100]
 
     def __init__(self, ixloadapi):
         self._api = ixloadapi
@@ -132,33 +133,42 @@ class objective_config():
         for trafficprofile in self._config.trafficprofile:
             payload = {}
             index = 0
-            objective_type = trafficprofile.objective_type[index]
-            if "simulated_user" == objective_type:
-                payload = self._api._set_payload(trafficprofile.objectives[index].simulated_user, objective_config._SIMULATED_USERS_CONFIGS)
-                payload = self._extract_ramptype_payload(payload, objective_type)
-            if "throughput_kbps" == objective_type:
-                payload = self._api._set_payload(trafficprofile.objectives[index].throughput_kbps, objective_config._COMMON_CONFIGS)
-            if "throughput_mbps" == objective_type:
-                payload = self._api._set_payload(trafficprofile.objectives[index].throughput_mbps, objective_config._COMMON_CONFIGS)
-            if "connection_per_sec" == objective_type:
-                payload = self._api._set_payload(trafficprofile.objectives[index].connection_per_sec, objective_config._COMMON_CONFIGS)
-            if "concurrent_connections" == objective_type:
-                payload = self._api._set_payload(trafficprofile.objectives[index].concurrent_connections, objective_config._CONCURRENT_CONNECTIONS_CONFIGS)
-            if "connection_attempts_per_sec" == objective_type:
-                payload = self._api._set_payload(trafficprofile.objectives[index].connection_attempts_per_sec,
+            if trafficprofile.objective_type != None:
+                objective_type = trafficprofile.objective_type[index]
+                if len(trafficprofile.objectives) != 0:
+                    if "simulated_user" == objective_type:
+                        payload = self._api._set_payload(trafficprofile.objectives[index].simulated_user, objective_config._SIMULATED_USERS_CONFIGS)
+                        payload = self._extract_ramptype_payload(payload, objective_type)
+                    if "throughput_kbps" == objective_type:
+                        payload = self._api._set_payload(trafficprofile.objectives[index].throughput_kbps, objective_config._COMMON_CONFIGS)
+                    if "throughput_mbps" == objective_type:
+                        payload = self._api._set_payload(trafficprofile.objectives[index].throughput_mbps, objective_config._COMMON_CONFIGS)
+                    if "connection_per_sec" == objective_type:
+                        payload = self._api._set_payload(trafficprofile.objectives[index].connection_per_sec, objective_config._COMMON_CONFIGS)
+                    if "concurrent_connections" == objective_type:
+                        payload = self._api._set_payload(trafficprofile.objectives[index].concurrent_connections, objective_config._CONCURRENT_CONNECTIONS_CONFIGS)
+                    if "connection_attempts_per_sec" == objective_type:
+                        payload = self._api._set_payload(trafficprofile.objectives[index].connection_attempts_per_sec,
                                                     objective_config._COMMON_CONFIGS)
-            if "transactions_per_sec" == objective_type:
-                payload = self._api._set_payload(trafficprofile.objectives[index].transactions_per_sec, 
+                    if "transactions_per_sec" == objective_type:
+                        payload = self._api._set_payload(trafficprofile.objectives[index].transactions_per_sec, 
                                                         objective_config._COMMON_CONFIGS)
-            timeline_index = self._get_timeline(trafficprofile.timeline[index])
-            if timeline_index == None:
-                self._create_timeline(trafficprofile.timeline[index])
-                timeline_index = self._get_timeline(trafficprofile.timeline[index])
-            url = "%s/ixload/test/activeTest/timelineList/%s" % (self._api._ixload, timeline_index)
-            response = self._api._request('PATCH', url, payload)
-            obj_payload = self._get_objective_payload(index, trafficprofile.objective_type,
+                if trafficprofile.timeline != None:
+                    timeline_index = self._get_timeline(trafficprofile.timeline[index])
+                    if timeline_index == None:
+                        self._create_timeline(trafficprofile.timeline[index])
+                    timeline_index = self._get_timeline(trafficprofile.timeline[index])
+                    url = "%s/ixload/test/activeTest/timelineList/%s" % (self._api._ixload, timeline_index)
+                    response = self._api._request('PATCH', url, payload)
+                else :
+                    timeline_index = index
+                if trafficprofile.objective_value != None: 
+                    obj_payload = self._get_objective_payload(index, trafficprofile.objective_type,
                                                       trafficprofile.objective_value, timeline_index)
-            if http_client.name == trafficprofile.app[0]:
-                url = self._api._config_url.get(http_client.name)
-                response = self._api._request('PATCH', url, obj_payload)
+                else : 
+                    obj_payload = self._get_objective_payload(index, trafficprofile.objective_type,
+                                                      self._objective_value, timeline_index)
+                if http_client.name == trafficprofile.app[0]:
+                    url = self._api._config_url.get(http_client.name)
+                    response = self._api._request('PATCH', url, obj_payload)
         return
