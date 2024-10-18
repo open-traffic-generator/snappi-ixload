@@ -27,9 +27,13 @@ class port(object):
         for device in self._config.devices:
             ethernet = device.ethernets[0]
             location = self._get_chasiss(ethernet.connection.port_name, self._config.ports)
-            self._add_chassis(location)
-            for ip in ethernet.ipv4_addresses:
-                self._assign_ports(location, ip.name)
+            if location :
+                if not self.is_chassis_connected(location):
+                    self._add_chassis(location)
+                for ip in ethernet.ipv4_addresses:
+                    self._assign_ports(location, ip.name)
+            else:
+                pass
     
     def _get_chasiss(self, port_name, port_config):
         '''
@@ -37,6 +41,7 @@ class port(object):
         for port in port_config:
             if port.name == port_name:
                 return port.location
+        return False
             
     def _add_chassis(self, location):
         '''
@@ -49,6 +54,15 @@ class port(object):
         refresh_connection_url = "%s/%s/operations/refreshConnection" % (chassis_list_url, response)
         response = self._api._request('POST', refresh_connection_url, {})
         self._api._perform_generic_operation(refresh_connection_url, {})
+    
+    def is_chassis_connected(self, location):
+        chassis_list_url = "%s/ixload/chassisChain/chassisList" % (self._api._ixload)
+        chassis_name = location.split("/")[0]
+        chassis_list = self._api._request('GET', chassis_list_url)
+        for chassis in chassis_list:
+            if chassis['name'] == chassis_name and chassis['isConnected'] == True:
+                return True
+        return False
     
     def _assign_ports(self, location, ip_name):
         '''

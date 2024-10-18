@@ -12,6 +12,7 @@ global CONFIG
 CONFIG = snappi.Config()
 CS = snappi.ControlState()
 GM = snappi.MetricsRequest()
+MR = snappi.MetricsResponse()
 #sys.path.append("C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi-ixload")
 from snappi_ixload import ixloadapi
 API = ixloadapi.Api(host="localhost", version="10.00.0.152")
@@ -88,15 +89,24 @@ def set_control_state():
 @app.route('/monitor/metrics', methods=["POST"])
 def get_metrics():
     GM.deserialize(request.data.decode("utf-8"))
-    
     try:
-        
-        config = API.metrics_request(CS)
-        return Response(config.serialize(),
+        api = snappi.api()
+        metrics_request = api.metrics_request()
+        metrics_request.deserialize(request.data.decode('utf-8'))
+        result = API.get_metrics(metrics_request)
+        return Response(result.serialize(),
                     mimetype='application/json',
                     status=200)
-    except Exception as error:
-        print(error)
+    except Exception as err:
+        error = snappi.Error()
+        error.code = err._status_code
+        error.kind = "validation"
+        error.errors = [err._message]
+        return Response(
+            status=400,
+            response=error.serialize(),
+            headers={"Content-Type": "application/json"},
+        )
 
 # main driver function
 if __name__ == "__main__":
