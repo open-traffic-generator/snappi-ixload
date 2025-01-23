@@ -1,10 +1,13 @@
 import sys
 #sys.path.append("C:\\Users\\waseebai\\Documents\\GitHub\\snappi\\artifacts\\snappi")
-#sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
+sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
+
 
 import snappi
 
-api = snappi.api(location="http://127.0.0.1:5000", verify=False)
+
+
+api = snappi.api(location="10.154.163.25:8080", ext="ixload", verify=False)
 config = api.config()
 
 port_1 = config.ports.port(name="p1", location="amit.buh.is.keysight.com/1/2")[-1]
@@ -217,7 +220,7 @@ delete1.page = "./1b.html"
 # (delete2,) = delete_b.delete.delete()
 # delete2.destination = "Traffic2_Http1Server1:80" 
 # delete2.page = "./1b.html"
-import pdb;pdb.set_trace()
+
 
 
 tp = config.trafficprofile.trafficprofile()

@@ -1,15 +1,17 @@
 import sys
 #sys.path.append("C:\\Users\\waseebai\\Documents\\GitHub\\snappi\\artifacts\\snappi")
-#sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
+sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
 
 
 import snappi
 
-api = snappi.api(location="http://127.0.0.1:5000", verify=False)
+
+
+api = snappi.api(location="10.20.224.246:8080", ext="ixload", verify=False)
 config = api.config()
 
-port_1 = config.ports.port(name="p1", location="amit.buh.is.keysight.com/1/1")[-1]
-port_2 = config.ports.port(name="p2", location="amit.buh.is.keysight.com/1/2")[-1]
+port_1 = config.ports.port(name="p1", location="10.39.65.156/2/1")[-1]
+port_2 = config.ports.port(name="p2", location="10.39.65.156/2/2")[-1]
 
 (d1, d2) = config.devices.device(name="d1").device(name="d2")
 (e1,) = d1.ethernets.ethernet(name="d1.e1")
@@ -213,6 +215,7 @@ http_2.type_of_service = 0
 http_2.high_perf_with_simulated_user = False		#UDP configs can be mapped http.transport = udp_2.name
 #http_2.server(endpoints_allow_outbound)
 (http_server,) = http_2.servers.server()
+http_server.name = "httpserver1"
 http_server.rst_timeout = 100
 http_server.enable_http2 = False
 http_server.port = 80
@@ -298,10 +301,9 @@ segment1.target = 100
 # obj_type[0].connection_per_sec.ramp_down_time=12
 #obj_type[0].connection_per_sec.ramp_down_value=15
 
-
-
 response = api.set_config(config)
 print(response)
+api.ixload_configure("post", "url", "data")
 
 # cs = api.control_state()
 # cs.app.state = 'start' #cs.app.state.START 

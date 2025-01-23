@@ -22,7 +22,7 @@ class scenarios(object):
         4) set /vport/l1Config/... properties using the corrected /vport -type
         5) connectPorts to use new l1Config settings and clearownership
         """
-        #import pdb;pdb.set_trace()
+        #
         self._scenarios_config = self._api.devices
         with Timer(self._api, "Scenario Configuration"):
             self._create_scenarios()
@@ -62,7 +62,7 @@ class scenarios(object):
             #url1, url2 = self._api._get_url(network_url , ethernet.url)
             port.url = network_url + port.url
             payload = self._api._set_payload(port)
-            #import pdb;pdb.set_trace()
+            #
             response = self._api._request('POST', port.url, payload)
             
     def _create_ethernet(self, network, network_url):
