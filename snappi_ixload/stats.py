@@ -1,8 +1,8 @@
 import json
 import re
 import time
-from timer import Timer
 from datetime import datetime, timedelta
+#V1
 
 class stats_config():
     """
@@ -36,7 +36,7 @@ class stats_config():
         """
         wait_time = datetime.now()+timedelta(0,300)
         state = self._api.get_current_state()
-        if state.lower() == 'running' or 'Starting Run':
+        if state.lower() == 'running' or state.lower() == 'starting run' :
             getting_stats = True
             stats_source_url = "%s/ixload/stats/%s/values" % (self._api._ixload, name)
             stats_source_list = self._get_stats_list(metric_obj, name, metric_res)
@@ -48,15 +48,16 @@ class stats_config():
                 time_stamp_dict[stats]['values'] = []
             values_dict = self._api._request('GET', stats_source_url, option=1)
             while getting_stats:
-                if values_dict:
+                if values_dict : # test start
+                #if values_dict and self._api.get_current_state() == "Stopping Run" : # test end
                     for stats in stats_source_list:
-                        new_time_stamps = [int(timestamp) for timestamp in values_dict.keys() if timestamp not in collected_timestamps.get(stats, [])]
+                        new_time_stamps = [int(timestamp) for timestamp in values_dict.keys() if timestamp  not  in collected_timestamps.get(stats, [])]
                         new_time_stamps.sort()
                         stat_list = []
                         for timestamp in new_time_stamps:
                             time_stamp_str = str(timestamp)
                             if stats in values_dict[time_stamp_str].keys():
-                                for caption, value in values_dict[time_stamp_str].items():
+                                for caption, value in values_dict[  time_stamp_str].items():
                                     if caption == stats:
                                         stat_list.append(str(value))
                                         key = 'timestamp'+str(new_time_stamps.index(timestamp)+1)
@@ -65,13 +66,14 @@ class stats_config():
                             else:
                                 raise Exception("Please enter the valid stats-%s is invalid" % stats)
                     stats_value = time_stamp_dict
-                    getting_stats = False
+                    getting_stats = False # get_stats for starting test
+                    #getting_stats = self._api.get_current_state() == "Running" # get_stats for  ending test
+                elif len(values_dict) ==0 and  wait_time < datetime.now():
+                    raise Exception("Cannot Get Stats after 300 seconds.Check the test status")
                 else:
-                    if wait_time < datetime.now():
-                        raise Exception("Cannot Get Stats after 300 seconds.Check the test status")
                     values_dict = self._api._request('GET', stats_source_url, option=1)
         else:
-            raise Exception(not "Cannot Get Stats when ActiveTest State - %s" % state)
+            raise Exception("Cannot Get Stats when ActiveTest is in %s State" % state)
         # metric_response
         for key, value in stats_value.items():
             index = list(stats_value.keys()).index(key)

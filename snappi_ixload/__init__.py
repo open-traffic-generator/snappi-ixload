@@ -1,1 +1,1 @@
-from snappi_ixload.ixloadapi import Api
+from snappi_ixload.snappi_api import Api
