@@ -21,7 +21,7 @@ from snappi_ixload.traffic_map import trafficmap_config
 #from protocols import protocols
 #from snappi_ixload.chassis import chassis
 #from stats import stats
-from stats import stats_config
+from snappi_ixload.stats import stats_config
 
 class Api(snappi.Api):
     """
