@@ -147,7 +147,6 @@ class Api(snappi.Api):
         url = self._ixload + url
         method = method.upper()
         reply = self._request(method, url, data)
-        import pdb;pdb.set_trace()
         if not reply:
              raise Exception(reply.text)
         self.logger.info("Cofiguration applied :%s" % (reply))
