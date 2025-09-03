@@ -1,7 +1,7 @@
 import json
 import re
 import time
-from snappi_ixload.timer import Timer
+from .timer import Timer
 
 class scenarios(object):
     """Transforms OpenAPI objects into IxNetwork objects

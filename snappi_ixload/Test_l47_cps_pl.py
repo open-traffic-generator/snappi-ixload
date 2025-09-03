@@ -2,11 +2,12 @@ from tabulate import tabulate
 import sys
 sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
 import snappi
+#import snappi_ixload
 import ipaddress
 import re
 import macaddress
 import time
-
+import json
 
 import logging
 
@@ -15,7 +16,7 @@ ipp = ipaddress.ip_address
 maca = macaddress.MAC
 
 ENI_START = 1
-ENI_COUNT = 1# 64
+ENI_COUNT = 8# 64
 ENI_MAC_STEP = '00:00:00:18:00:00'
 ENI_STEP = 1
 ENI_L2R_STEP = 1000
@@ -30,24 +31,64 @@ ACL_RULES_NSG = 1000  # 1000
 ACL_TABLE_COUNT = 5
 
 IP_PER_ACL_RULE = 25  # 128
-IP_MAPPED_PER_ACL_RULE = IP_PER_ACL_RULE # 40
-IP_ROUTE_DIVIDER_PER_ACL_RULE = 64 # 8, must be a power of 2 number
+IP_MAPPED_PER_ACL_RULE = IP_PER_ACL_RULE  # 40
+IP_ROUTE_DIVIDER_PER_ACL_RULE = 64  # 8, must be a power of 2 number
 
 IP_STEP1 = int(ipp('0.0.0.1'))
-#IP_STEP2 = int(ipp('0.0.1.0'))
-#IP_STEP3 = int(ipp('0.1.0.0'))
-#IP_STEP4 = int(ipp('1.0.0.0'))
-IP_STEP_ENI = int(ipp('0.64.0.0')) # IP_STEP4
-IP_STEP_NSG = int(ipp('0.2.0.0')) # IP_STEP3 * 4
-IP_STEP_ACL = int(ipp('0.0.0.50')) # IP_STEP2 * 2
+# IP_STEP2 = int(ipp('0.0.1.0'))
+# IP_STEP3 = int(ipp('0.1.0.0'))
+# IP_STEP4 = int(ipp('1.0.0.0'))
+IP_STEP_ENI = int(ipp('0.64.0.0'))  # IP_STEP4
+IP_STEP_NSG = int(ipp('0.2.0.0'))  # IP_STEP3 * 4
+IP_STEP_ACL = int(ipp('0.0.0.50'))  # IP_STEP2 * 2
 IP_STEPE = int(ipp('0.0.0.2'))
-
 
 IP_L_START = ipaddress.ip_address('1.1.0.1')
 IP_R_START = ipaddress.ip_address('1.4.0.1')
+IPv6_R_START = ipaddress.IPv6Address('2603:100:3E8::104:1')
+IPv6_Range_Increment = ipaddress.IPv6Address('0:0:1::40:0')
 
 MAC_L_START = macaddress.MAC('00:1A:C5:00:00:01')
 MAC_R_START = macaddress.MAC('00:1B:6E:00:00:01')
+
+
+def patch_dutnetwork_range(api, base_url, session_id, test_id, dut_id, network_range_id, first_ip, username, password):
+    """
+    Sends a PATCH request to update the first IP in the network range.
+
+    Args:
+        base_url (str): The base URL of the API (e.g., "https://10.36.78.203:8443").
+        session_id (int): The session ID (e.g., 0).
+        test_id (str): The test ID (e.g., "activeTest").
+        dut_id (int): The DUT ID (e.g., 0).
+        network_range_id (int): The network range ID (e.g., 0).
+        first_ip (str): The new first IP to set (e.g., "1.2.3.4").
+        username (str): The username for authentication.
+        password (str): The password for authentication.
+
+    Returns:
+        Response: The response object from the PATCH request.
+    """
+    url = f"{base_url}/api/v1/sessions/{session_id}/ixload/test/{test_id}/dutList/{dut_id}/dutConfig/networkRangeList/{network_range_id}"
+    headers = {
+        "Content-type": "application/json"
+    }
+    payload = {
+        "firstIp": first_ip
+    }
+
+    try:
+        res = api.ixload_configure("patch", url, payload)  # noqa: F841
+        #response = requests.patch(url, json=payload, headers=headers, auth=(username, password), verify=False)
+        if res.status_code == 204:
+            print("PATCH request successful: 204 No Content")
+        else:
+            print(f"PATCH request failed: {res.status_code} {res.reason}")
+            print(res.text)
+        return res
+    except res.RequestException as e:
+        print(f"An error occurred: {e}")
+        return None
 
 
 def assignPorts(api, ports_list):
@@ -62,7 +103,8 @@ def assignPorts(api, ports_list):
     portListPerCommunity = ports_list
     for communityName in portListPerCommunity:
         if communityName not in communityNameList:
-            errorMsg = "Error while executing assignPorts operation. Invalid NetTraffic name: %s. This NetTraffic is not defined in the loaded rxf." % communityName
+            errorMsg = ("Error while executing assignPorts operation. Invalid NetTraffic name: %s. "
+                        "This NetTraffic is not defined in the loaded rxf.") % communityName
             raise Exception(errorMsg)
 
     for community in communityList:
@@ -78,7 +120,7 @@ def assignPorts(api, ports_list):
             paramDict = {"chassisId": chassisId, "cardId": cardId, "portId": portId}
             try:
                 # Code that may raise an exception
-                res = api.ixload_configure("post", portListUrl, paramDict)
+                res = api.ixload_configure("post", portListUrl, paramDict)  # noqa: F841
             except Exception as e:
                 # Handle any exception
                 print(f"An error occurred: {e}")
@@ -87,29 +129,51 @@ def assignPorts(api, ports_list):
     return
 
 
+def build_node_ips(count, vpc, service_type='vnet2vnet', nodetype="client"):
 
-def build_node_ips(count, vpc, nodetype="client"):
-    if nodetype in "client":
-        ip = ipp(int(IP_R_START) + (IP_STEP_NSG * count) + int(ipp('0.64.0.0')) * (vpc - 1))
-    if nodetype in "server":
-        ip = ipp(int(IP_L_START) + int(ipp('0.64.0.0')) * (vpc - 1))
+    if service_type == 'vnet2vnet':
+        if nodetype in "client":
+            ip = ipp(int(IP_R_START) + (IP_STEP_NSG * count) + int(ipp('0.64.0.0')) * (vpc - 1))
+        if nodetype in "server":
+            ip = ipp(int(IP_L_START) + int(ipp('0.64.0.0')) * (vpc - 1))
+    else:
+        # service_type == 'privatelink'
+        if nodetype in "dut_client":
+            ip = ipp(int(IP_R_START) + (IP_STEP_NSG * count) + int(ipp('0.64.0.0')) * (vpc - 1))
+        if nodetype in "client":
+            # ip = ipp(int(IP_R_START) + (IP_STEP_NSG * count) + int(ipp('0.64.0.0')) * (vpc - 1))
+            ip = ipp(int(IP_L_START) + int(ipp('0.64.0.0')) * (vpc - 1))
+        if nodetype in "server":
+            ip = ipaddress.IPv6Address((int(IPv6_R_START) + (int(IPv6_Range_Increment) * (vpc - 1))))
 
     return str(ip)
 
 
-def build_node_macs(count, vpc, nodetype="client"):
+def build_node_macs(count, vpc, service_type, nodetype="client"):
 
-    if nodetype in "client":
-        #m = maca(int(MAC_R_START) + int(maca('00-00-00-30-00-00')) * (vpc - 1) + (int(maca(ACL_TABLE_MAC_STEP)) * count))
-        m = maca(int(MAC_R_START) + int(maca('00-00-00-18-00-00')) * (vpc - 1) + (int(maca(ACL_TABLE_MAC_STEP)) * count))
-    if nodetype in "server":
-        #m = maca(int(MAC_L_START) + int(maca('00-00-00-30-00-00')) * (vpc - 1))
-        m = maca(int(MAC_L_START) + int(maca('00-00-00-18-00-00')) * (vpc - 1))
+    if service_type == 'vnet2vnet':
+        if nodetype in "client":
+            m = maca(int(MAC_R_START) + int(maca('00-00-00-18-00-00')) * (vpc - 1) +
+                     (int(maca(ACL_TABLE_MAC_STEP)) * count))
+        if nodetype in "server":
+            m = maca(int(MAC_L_START) + int(maca('00-00-00-18-00-00')) * (vpc - 1))
+    else:
+        # service_type == private_link
+        if nodetype in "dut_client":
+            m = maca(int(MAC_R_START) + int(maca('00-00-00-18-00-00')) * (vpc - 1) +
+                     (int(maca(ACL_TABLE_MAC_STEP)) * count))
+        if nodetype in "client":
+            m = maca(int(MAC_L_START) + int(maca('00-00-00-18-00-00')) * (vpc - 1))
+        if nodetype in "server":
+            m = maca(int(MAC_R_START) + int(maca('00-00-00-18-00-00')) * (vpc - 1) +
+                     (int(maca(ACL_TABLE_MAC_STEP)) * count))
+
+
 
     return str(m).replace('-', ':')
 
 
-def build_node_vlan(index, nodetype="client"):
+def build_node_vlan(index, service_type, nodetype="client"):
 
     hero_b2b = False
 
@@ -121,7 +185,8 @@ def build_node_vlan(index, nodetype="client"):
 
     if nodetype == 'client':
         vlan = ENI_L2R_STEP + index + 1
-        #vlan = ENI_L2R_STEP + index
+    elif nodetype == 'dut_client':
+        vlan = ENI_L2R_STEP + index + 1
     else:
         ENI_STEP = 1
         if hero_b2b is True:
@@ -132,21 +197,31 @@ def build_node_vlan(index, nodetype="client"):
     return vlan
 
 
-def create_ip_list():
+def create_ip_list(service_type):
 
     ip_list = []
 
+    #ipaddress.IPv6Address(int((IP6_R_START)) + int(ipaddress.IPv6Address('0:0:0::2:0')))
+
     for eni in range(ENI_START, ENI_COUNT + 1):
         ip_dict_temp = {}
-        ip_client = build_node_ips(0, eni, nodetype="client")
-        mac_client = build_node_macs(0, eni, nodetype="client")
-        vlan_client = build_node_vlan(eni - 1, nodetype="client")
 
-        ip_server = build_node_ips(0, eni, nodetype="server")
-        mac_server = build_node_macs(0, eni, nodetype="server")
-        vlan_server = build_node_vlan(eni - 1, nodetype="server")
+        if service_type == 'privatelink':
+            dut_ip_client = build_node_ips(0, eni, service_type, nodetype="dut_client")
+            dut_vlan_client = build_node_vlan(eni - 1, service_type, nodetype="dut_client")
+
+        ip_client = build_node_ips(0, eni, service_type, nodetype="client")
+        mac_client = build_node_macs(0, eni, service_type, nodetype="client")
+        vlan_client = build_node_vlan(eni - 1, service_type, nodetype="client")
+
+        ip_server = build_node_ips(0, eni, service_type, nodetype="server")
+        mac_server = build_node_macs(0, eni, service_type, nodetype="server")
+        vlan_server = build_node_vlan(eni - 1, service_type, nodetype="server")
 
         ip_dict_temp['eni'] = eni
+        if service_type == 'privatelink':
+            ip_dict_temp['dut_ip_client'] = dut_ip_client
+            ip_dict_temp['dut_vlan_client'] = dut_vlan_client
         ip_dict_temp['ip_client'] = ip_client
         ip_dict_temp['mac_client'] = mac_client
         ip_dict_temp['vlan_client'] = vlan_client
@@ -159,6 +234,7 @@ def create_ip_list():
 
     return ip_list
 
+
 def edit_l1_settings(api):
 
     params = {'useIEEEDefaults': 'false',
@@ -170,7 +246,7 @@ def edit_l1_settings(api):
         portl1_url = "ixload/test/activeTest/communityList/{}/network/portL1Settings".format(i)
         try:
             # Code that may raise an exception
-            res = api.ixload_configure("patch", portl1_url, params)
+            res = api.ixload_configure("patch", portl1_url, params)  # noqa: F841
         except Exception as e:
             # Handle any exception
             print(f"An error occurred: {e}")
@@ -193,6 +269,7 @@ def find_test_role(test_type, server_vlan):
 
     return test_role
 
+
 def get_objectIDs(api, url):
 
     objectIDs = []
@@ -203,6 +280,7 @@ def get_objectIDs(api, url):
 
     return objectIDs
 
+
 def set_rangeList(api):
     """
     Adjust both rangeList, macRange, and vlanRange as needed
@@ -211,7 +289,7 @@ def set_rangeList(api):
 
     serverList_url = "ixload/test/activeTest/communityList/1/network/stack/childrenList/5/childrenList/6/rangeList"
 
-   # get all the IDs
+    # get all the IDs
     client_objectIDs = get_objectIDs(api, clientList_url)
     server_objectIDs = get_objectIDs(api, serverList_url)
 
@@ -225,27 +303,26 @@ def set_rangeList(api):
     }
     vlan_dict = {'uniqueCount': 1}
 
-    c_res_results = []
-    for i,cid in enumerate(client_objectIDs):
+    for i, cid in enumerate(client_objectIDs):
         try:
             # Code that may raise an exception
-            res1 = api.ixload_configure("patch", "{}/{}".format(clientList_url, cid), dict1)
-            res2 = api.ixload_configure("patch", "{}/{}".format(clientList_url, cid), dict2)
-            res3 = api.ixload_configure("patch", "{}/{}/vlanRange".format(clientList_url, cid), vlan_dict)
+            res1 = api.ixload_configure("patch", "{}/{}".format(clientList_url, cid), dict1)  # noqa: F841
+            res2 = api.ixload_configure("patch", "{}/{}".format(clientList_url, cid), dict2)  # noqa: F841
+            res3 = api.ixload_configure("patch", "{}/{}/vlanRange".format(clientList_url, cid), vlan_dict)  # noqa: F841
         except Exception as e:
             # Handle any exception
             print(f"An error occurred: {e}")
 
-    s_res_results = []
     for i, sid in enumerate(server_objectIDs):
         try:
             # Code that may raise an exception
-            res1 = api.ixload_configure("patch", "{}/{}/vlanRange".format(serverList_url, sid), vlan_dict)
+            res1 = api.ixload_configure("patch", "{}/{}/vlanRange".format(serverList_url, sid), vlan_dict)  # noqa: F841
         except Exception as e:
             # Handle any exception
             print(f"An error occurred: {e}")
 
     return
+
 
 def set_trafficMapProfile(api):
 
@@ -264,35 +341,37 @@ def set_trafficMapProfile(api):
     submapsIpv4_url = "ixload/test/activeTest/communityList/0/activityList/0/destinations/0/customPortMap/submapsIPv4/0"
     try:
         # Code that may raise an exception
-        res = api.ixload_configure("patch", submapsIpv4_url, meshType_json)
+        res = api.ixload_configure("patch", submapsIpv4_url, meshType_json)  # noqa: F841
     except Exception as e:
         # Handle any exception
         print(f"An error occurred: {e}")
 
     return
+
 
 def set_tcpCustom(api):
 
     tcp_agent_url = "ixload/test/activeTest/communityList/0/activityList/0/agent"
-    #url = "{}/{}".format(base_url, tcp_agent_url)
+    # url = "{}/{}".format(base_url, tcp_agent_url)
 
     param_json = {'maxPersistentRequests': 1}
-    #response = requests.patch(url, json=param_json)
+    # response = requests.patch(url, json=param_json)
     try:
         # Code that may raise an exception
-        res = api.ixload_configure("patch", tcp_agent_url, param_json)
+        res = api.ixload_configure("patch", tcp_agent_url, param_json)  # noqa: F841
     except Exception as e:
         # Handle any exception
         print(f"An error occurred: {e}")
 
     return
 
+
 def set_timelineCustom(api, initial_cps_value):
 
-    activityList_url = "ixload/test/activeTest/communityList/0/activityList/0"
+    activityList_url = "ixload/test/activeTest/communityList/0/activityList/0"  # noqa: F841
     timelineObjectives_url = "ixload/test/activeTest/communityList/0/activityList/0/timeline"
-    #url_activityList = "{}/{}".format(base_url, activityList_url)
-    #url_timeline = "{}/{}".format(base_url, timelineObjectives_url)
+    # url_activityList = "{}/{}".format(base_url, activityList_url)
+    # url_timeline = "{}/{}".format(base_url, timelineObjectives_url)
 
     """
     activityList_json = {
@@ -303,7 +382,7 @@ def set_timelineCustom(api, initial_cps_value):
         'userObjectiveValue': ENI_COUNT*250000
     }
     """
-    activityList_json = {
+    activityList_json = {  # noqa: F841
         'constraintType': 'ConnectionRateConstraint',
         'constraintValue': initial_cps_value,
         'enableConstraint': True,
@@ -315,7 +394,7 @@ def set_timelineCustom(api, initial_cps_value):
         'rampUpValue': 1000000,
         'sustainTime': 180
     }
-    #response = requests.patch(url_activityList, json=activityList_json)
+    # response = requests.patch(url_activityList, json=activityList_json)
     """
     try:
         # Code that may raise an exception
@@ -326,14 +405,15 @@ def set_timelineCustom(api, initial_cps_value):
     """
     try:
         # Code that may raise an exception
-        res = api.ixload_configure("patch", timelineObjectives_url, timeline_json)
+        res = api.ixload_configure("patch", timelineObjectives_url, timeline_json)  # noqa: F841
     except Exception as e:
         # Handle any exception
         print(f"An error occurred: {e}")
 
     return
 
-def run_cps_search(api, initial_cps_value, logger):
+
+def run_cps_search(api, initial_cps_value):
 
     MAX_CPS = 5000000
     MIN_CPS = 0
@@ -342,6 +422,8 @@ def run_cps_search(api, initial_cps_value, logger):
     test_value = initial_cps_value
     activityList_url = "ixload/test/activeTest/communityList/0/activityList/0"
     releaseConfig_url = "ixload/test/operations/abortAndReleaseConfigWaitFinish"
+    testRuns = []
+    columns = ['#Run', 'Max CPS']
 
     while ((MAX_CPS - MIN_CPS) > threshold):
         test_result = ""
@@ -400,22 +482,16 @@ def run_cps_search(api, initial_cps_value, logger):
         req.httpclient.stat_name = ["Connection Rate"]
         # req.httpclient.stat_name = ["HTTP Simulated Users", "HTTP Concurrent Connections", "HTTP Connect Time (us)", "TCP Connections Established", "HTTP Bytes Received"]
         # req.httpclient.all_stats = True # for  all stats
-        import pdb;pdb.set_trace()
+
         res = api.get_metrics(req).httpclient_metrics
-        #print("**** res = {} ****".format(res))
-        print("**** res = {} ****".format(res))
         stats_client.append(res)
         time.sleep(60)
 
         res = api.get_metrics(req).httpclient_metrics
-        #print("**** res = {} ****".format(res))
-        print("**** res = {} ****".format(res))
         stats_client.append(res)
         time.sleep(60)
 
         res = api.get_metrics(req).httpclient_metrics
-        #print("**** res = {} ****".format(res))
-        print("**** res = {} ****".format(res))
         stats_client.append(res)
         time.sleep(60)
 
@@ -433,8 +509,6 @@ def run_cps_search(api, initial_cps_value, logger):
             client_stat_values += tmp
             client_stat_values = [int(item) for item in client_stat_values]
         cps_max = max(client_stat_values)
-        #print("Max value from test run{}: {}".format(test_iteration, cps_max))
-        print("Max value from test run{}: {}".format(test_iteration, cps_max))
 
         if cps_max < test_value:
             test = False
@@ -482,6 +556,117 @@ def run_cps_search(api, initial_cps_value, logger):
 
     return
 
+
+def run_planned_switchover(api, initial_cps_value):
+
+    test_iteration = 1
+    test_value = initial_cps_value
+    activityList_url = "ixload/test/activeTest/communityList/0/activityList/0"
+    releaseConfig_url = "ixload/test/operations/abortAndReleaseConfigWaitFinish"
+    columns = ['#Run', 'Max CPS']
+
+    test_result = ""
+    print(
+        "----Test Iteration %d------------------------------------------------------------------"
+        % test_iteration)
+    old_value = test_value
+    print("Testing CPS Objective = %d" % test_value)
+    """
+    activityList_json = {
+        'constraintType': 'ConnectionRateConstraint',
+        'constraintValue': 6000000,
+        'enableConstraint': True,
+        'userObjectiveType': 'simulatedUsers',
+        'userObjectiveValue': ENI_COUNT*250000
+    }
+    """
+    activityList_json = {
+        'constraintType': 'ConnectionRateConstraint',
+        'constraintValue': test_value,
+        'enableConstraint': True,
+        'userObjectiveType': 'simulatedUsers',
+        'userObjectiveValue': 64500
+    }
+    print("Updating CPS objective value settings...")
+    try:
+        # Code that may raise an exception
+        res = api.ixload_configure("patch", activityList_url, activityList_json)
+    except Exception as e:
+        # Handle any exception
+        print(f"An error occurred: {e}")
+    print("CPS objective value updated.")
+
+    print("Applying config...")
+    print("Starting Traffic")
+    cs = api.control_state()
+    cs.app.state = 'start'  # cs.app.state.START
+    response1 = api.set_control_state(cs)
+    print(response1)
+    req = api.metrics_request()
+
+
+    # HTTP client
+    stats_client = []
+    req.choice = "httpclient"
+    # req.httpclient.stat_name = ["Connection Rate"]
+    req.httpclient.stat_name = ["Connection Rate", "HTTP Concurrent Connections", "TCP Resets Sent", "TCP Retries"]
+
+    # HTTP server
+    stats_server = []
+    req1 = api.metrics_request()
+    req1.choice= "httpserver"
+    req1.httpserver.stat_name = ["TCP Resets Sent", "TCP Retries"]
+    #req1.httpserver.all_stats=True # for all stats - True
+
+    res = api.get_metrics(req).httpclient_metrics
+    res1 = api.get_metrics(req1).httpserver_metrics
+    stats_client.append(res)
+    stats_server.append(res1)
+
+    # HERE SWITCHOVER
+    time.sleep(60)
+
+
+    res = api.get_metrics(req).httpclient_metrics
+    res1 = api.get_metrics(req1).httpserver_metrics
+    stats_client.append(res)
+    stats_server.append(res1)
+
+    # HERE SWITCHOVER
+    time.sleep(60)
+
+    res = api.get_metrics(req).httpclient_metrics
+    res1 = api.get_metrics(req1).httpserver_metrics
+    stats_client.append(res)
+    stats_server.append(res1)
+
+    # HERE SWITCHBACK
+    time.sleep(60)
+
+    cps_max = 0
+    pattern = r"- name:\s*([^\n]*)\n(.*?)(?=- name|\Z)"
+    for stat in stats_client:
+        tmp = re.findall(pattern, str(stat), re.DOTALL)
+
+    for stat in stats_server:
+        tmp1 = re.findall(pattern, str(stat), re.DOTALL)
+
+    result = {}
+    for match in tmp:
+        name = match[0].strip()
+        values = re.findall(r"value:\s*'([^']*)'", match[1])
+        result[name] = values
+
+    result1 = {}
+    for match in tmp1:
+        name = match[0].strip()
+        values = re.findall(r"value:\s*'([^']*)'", match[1])
+        result1[name] = values
+
+    print('test')
+
+    return
+
 def test_saveAs(api, test_filename):
 
     saveAs_operation = 'ixload/test/operations/saveAs'
@@ -501,13 +686,13 @@ def test_saveAs(api, test_filename):
 
     return
 
-def main(connection_dict, test_type, test_filename, initial_cps_value, logger):
+def ha_main(connection_dict, service_type, test_type, test_filename, initial_cps_value, logger):
 
     ####### Start Here ######
     main_start_time = time.time()
     gw_ip = connection_dict['gw_ip']
     chassis_ip = connection_dict['chassis_ip']
-    api = snappi.api(location="10.36.78.203:8080", ext="ixload", verify=False, version="10.10.100.2")
+    api = snappi.api(location="10.36.78.203:8080", ext="ixload", verify=False, version="11.00.0.320")
     config = api.config()
 
     port_1 = config.ports.port(name="p1", location="{}/1/1".format(chassis_ip))[-1]
@@ -515,7 +700,7 @@ def main(connection_dict, test_type, test_filename, initial_cps_value, logger):
 
     # client/server IP ranges created here
 
-    ip_list = create_ip_list()
+    ip_list = create_ip_list(service_type=service_type)
 
     print("Setting devices")
     time_device_time = time.time()
@@ -571,12 +756,20 @@ def main(connection_dict, test_type, test_filename, initial_cps_value, logger):
             eth2.step = "00:00:00:00:00:02"
 
             # ip section
-            ip2 = eth2.ipv4_addresses.ipv4()[-1]
-            ip2.name = "{}.ipv4".format(eth2.name)
-            ip2.address = eni_info['ip_server']
-            ip2.prefix = 10
-            ip2.gateway = "0.0.0.0"
-            ip2.count = 1
+            if service_type == 'privatelink':
+                ip2 = eth2.ipv6_addresses.ipv6()[-1]
+                ip2.name = "{}.ipv6".format(eth2.name)
+                ip2.address = eni_info['ip_server']
+                ip2.prefix = 128
+                ip2.gateway = "::0"
+                # ip2.count = 1
+            else:
+                ip2 = eth2.ipv4_addresses.ipv4()[-1]
+                ip2.name = "{}.ipv4".format(eth2.name)
+                ip2.address = eni_info['ip_server']
+                ip2.prefix = 10
+                ip2.gateway = "0.0.0.0"
+                ip2.count = 1
 
             # vlan section
             vlan2 = eth2.vlans.vlan()[-1]
@@ -745,19 +938,18 @@ def main(connection_dict, test_type, test_filename, initial_cps_value, logger):
     print("Custom settings completed: {}".format(time_custom_finish - time_custom_time))
 
     print("Configuring custom port settings")
-    """
     ports_list = {
-        'Traffic1@Network1': [(1,2,1), (1,3,1), (1,4,1), (1,5,1), (1,6,1), (1,7,1), (1,8,1)],
-        'Traffic2@Network2': [(1,2,2), (1,3,2), (1,4,2), (1,5,2), (1,6,2), (1,7,2), (1,8,2)]
+        'Traffic1@Network1': [(1,1,1), (1,2,1), (1,3,1), (1,4,1), (1,5,1), (1,6,1), (1,7,1), (1,8,1)],
+        'Traffic2@Network2': [(1,1,2), (1,2,2), (1,3,2), (1,4,2), (1,5,2), (1,6,2), (1,7,2), (1,8,2)]
     }
     """
     ports_list = {
         'Traffic1@Network1': [(1,1,1)],
         'Traffic2@Network2': [(1,1,2)]
     }
-
+    """
     time_assignPort_time = time.time()
-    #assignPorts(api,ports_list)
+    assignPorts(api,ports_list)
     time_assignPort_finish = time.time()
     print("Custom port settings completed: {}".format(time_assignPort_finish - time_assignPort_time))
 
@@ -798,12 +990,13 @@ def main(connection_dict, test_type, test_filename, initial_cps_value, logger):
     # save file
     print("Saving Test File")
     test_save_time = time.time()
-    #test_saveAs(api, test_filename)
+    test_saveAs(api, test_filename)
     test_save_finish_time = time.time()
     print("Finished saving: {}".format(test_save_finish_time - test_save_time))
 
     # Traffic Starts
-    cs = run_cps_search(api, initial_cps_value, logger)
+    #cs = run_cps_search(api, initial_cps_value)
+    cs = run_planned_switchover(api, initial_cps_value)
     #cs.app.state = 'stop' #cs.app.state.START
     #api.set_control_state(cs)
     main_finish_time = time.time()
@@ -823,7 +1016,9 @@ if __name__ == '__main__':
         'port': '8080',
     }
 
-    test_filename = "dash_cps"
+    test_filename = "dash_cps_pl"
     initial_cps_value = 1000000
+    #service_type = 'vnet2vnet'
+    service_type = 'privatelink'
 
-    main(connection_dict, test_type_dict['all'], test_filename, initial_cps_value, logger)
+    ha_main(connection_dict, service_type ,test_type_dict['all'], test_filename, initial_cps_value, logger)

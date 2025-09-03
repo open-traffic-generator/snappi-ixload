@@ -1,7 +1,7 @@
 import json
 import re
 import time
-from timer import Timer
+from .timer import Timer
 
 
 class objective_config():

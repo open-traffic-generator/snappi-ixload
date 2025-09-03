@@ -1,7 +1,7 @@
 import json
 import re
 import time
-from snappi_ixload.timer import Timer
+from .timer import Timer
 
 class interfaces(object):
     """Transforms OpenAPI objects into IxNetwork objects
@@ -27,6 +27,16 @@ class interfaces(object):
         "count": "count",
     }
 
+    _IPv6 = {
+        "address": "ipAddress",
+        "gateway": "gatewayAddress",
+        "prefix": "prefix",
+        "name" : "name",
+        "increment_by": "incrementBy",
+        "count": "count",
+        "gateway_incr": "gatewayIncrement"
+    }
+    
     _VLAN = {
         "id": "firstId",
         "priority": "priority",
@@ -83,6 +93,7 @@ class interfaces(object):
                 response = self._api._request('PATCH', mac_url, payload)
                 self._api._config_url[ethernet.name] = mac_url
                 self._create_ipv4(ethernet, ip_url, flag)
+                self._create_ipv6(ethernet, ip_url,flag)
                 self._create_vlan(ethernet, vlan_url, flag)
                 flag = 0
             else:
@@ -100,6 +111,7 @@ class interfaces(object):
                 response = self._api._request('PATCH', ip_url, payload)
                 self._api._config_url[ethernet.name] = eth_url
                 self._create_ipv4(ethernet, ip_url, flag)
+                self._create_ipv6(ethernet, ip_url,flag)
                 self._create_vlan(ethernet, vlan_url, flag)
             
 
@@ -123,6 +135,22 @@ class interfaces(object):
             if payload:
                 response = self._api._request('PATCH', url, payload)
                 self._api._config_url[ipv4.name] = url
+
+    def _create_ipv6(self, ethernet, url, flag):
+        """
+            Add any ipv6 to the api server that do not already exist
+        """
+        ipv6_addresses = ethernet.get("ipv6_addresses")
+        if ipv6_addresses is None:
+            return
+        for ipv6 in ethernet.ipv6_addresses: 
+            payload = self._api._set_payload(ipv6, interfaces._IPv6)
+            payload['ipType'] = "IPv6"
+            # payload['gatewayIncrement'] = '::0'  # need to update model
+            # payload['incrementBy'] = '::1'   #need to update model
+            if payload:
+                response = self._api._request('PATCH', url, payload)
+                self._api._config_url[ipv6.name] = url
     
     def _create_vlan(self, ethernet, vlan_url, flag):
         """

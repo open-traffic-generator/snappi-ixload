@@ -1,15 +1,15 @@
 import sys
-sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
+#sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
 import snappi
 import time
 
-api = snappi.api(location="10.20.224.246:8080", ext="ixload", verify=False, version="10.00.0.152")
+api = snappi.api(location="localhost:8080", ext="ixload", verify=False, version="10.00.0.152")
 config = api.config()
 
-#port_1 = config.ports.port(name="p1", location="amit.buh.is.keysight.com/1/2")[-1]
-#port_2 = config.ports.port(name="p2", location="amit.buh.is.keysight.com/2/2")[-1]
-port_1 = config.ports.port(name="p1", location="10.39.65.156/2/7")[-1]
-port_2 = config.ports.port(name="p2", location="10.39.65.156/2/8")[-1]
+port_1 = config.ports.port(name="p1", location="10.39.65.156/2/11")[-1]
+port_2 = config.ports.port(name="p2", location="10.39.65.156/2/12")[-1]
+#port_1 = config.ports.port(name="p1", location="10.39.65.156/2/1")[-1]
+#port_2 = config.ports.port(name="p2", location="10.39.65.156/2/2")[-1]
 
 (d1, d2,) = config.devices.device(name="d1").device(name="d2")
 (e1,) = d1.ethernets.ethernet(name="d1.e1")
@@ -66,22 +66,22 @@ http_client.enable_cookie_support = False
 
 (http_2,) = d2.https.http(name="HTTP2")
 http_2.tcp_name = t2.name		#UDP configs can be mapped http.transport = udp_2.name
-# http_2.enable_tos = False
-# http_2.priority_flow_control_class = "v10"
-# http_2.precedence_tos = "v20"
-# http_2.delay_tos = "v10"
-# http_2.throughput_tos = "v10"
-# http_2.url_stats_count = 10
-# http_2.disable_priority_flow_control = 0
-# http_2.enable_vlan_priority = False
-# http_2.vlan_priority = 0
-# http_2.esm = 1460
-# http_2.enable_esm = False 
-# http_2.time_to_live_value = 64
-# http_2.tcp_close_option = "v10"
-# http_2.enable_integrity_check_support = False
-# http_2.type_of_service = 0 
-# http_2.high_perf_with_simulated_user = False		#UDP configs can be mapped http.transport = udp_2.name
+http_2.enable_tos = False
+http_2.priority_flow_control_class = "v10"
+http_2.precedence_tos = "v20"
+http_2.delay_tos = "v10"
+http_2.throughput_tos = "v10"
+http_2.url_stats_count = 10
+http_2.disable_priority_flow_control = 0
+http_2.enable_vlan_priority = False
+http_2.vlan_priority = 0
+http_2.esm = 1460
+http_2.enable_esm = False 
+http_2.time_to_live_value = 64
+http_2.tcp_close_option = "v10"
+http_2.enable_integrity_check_support = False
+
+http_2.high_perf_with_simulated_user = False		#UDP configs can be mapped http.transport = udp_2.name
 
 (http_server,) = http_2.servers.server()
 http_server.name = "Http1Server1"
@@ -129,28 +129,37 @@ mt1.vlan_range_pairs.destination_id = 1
 
 response = api.set_config(config)
 print(response)
-payload = {"mtu": "1400"}
-url = "ixload/test/activeTest/communityList/0/network/stack/childrenList/2/macRangeList"
-res = api.ixload_configure("patch", url, payload)
+# payload = {"mtu": "1400"}
+# url = "ixload/test/activeTest/communityList/0/network/stack/childrenList/2/macRangeList"
+# res = api.ixload_configure("patch", url, payload)
 
-payload = {"itemType": "L2EthernetPlugin"}
-url = "ixload/test/activeTest/communityList/0/network/stack/childrenList"
-res = api.ixload_configure("post", url, payload)
+# payload = {"itemType": "L2EthernetPlugin"}
+# url = "ixload/test/activeTest/communityList/0/network/stack/childrenList"
+# res = api.ixload_configure("post", url, payload)
 
 
 cs = api.control_state()
 cs.app.state = 'start'  # cs.app.state.START
 response1 = api.set_control_state(cs)
 print(response1)
+time.sleep(30)
 req = api.metrics_request()
 
-#HTTP client
 req.choice= "httpclient"
-req.httpclient.stat_name = ["HTTP Simulated Users", "HTTP Concurrent Connections",
-                            "HTTP Connect Time (us)", "TCP Connections Established",
+req.httpclient.stat_name = ["TCP Connections Established",
                             "HTTP Bytes Received"]
+req.httpclient.end_test = False
 res = api.get_metrics(req).httpclient_metrics
 print(res)
+print("*******************************************")
+req1 = api.metrics_request()
+req1.choice= "httpserver"
+req1.httpserver.end_test = False
+req1.httpserver.stat_name = ["Transmitted Data Rate (Kbps)"]
+res1 = api.get_metrics(req1).httpserver_metrics
+print(res1)
+print("*******************************************")
+
 
 cs.app.state = 'stop'  # cs.app.state.START
 api.set_control_state(cs)
