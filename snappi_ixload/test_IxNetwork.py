@@ -101,7 +101,7 @@ traffic_sl_ep.ports.values = [1]
 response = l47_api.set_config(config)
 print(response)
 
-#import pdb;pdb.set_trace()
+#
 response = l47_api.get_config()
 print(response)
 

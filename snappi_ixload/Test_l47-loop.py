@@ -7,22 +7,20 @@ import snappi
 
 
 
-api = snappi.api(location="10.20.224.246:8080", ext="ixload", verify=False)
+api = snappi.api(location="10.154.163.25:8080", ext="ixload", verify=False)
 config = api.config()
 
-port_1 = config.ports.port(name="p1", location="10.39.65.156/2/1")[-1]
-port_2 = config.ports.port(name="p2", location="10.39.65.156/2/2")[-1]
+port_1 = config.ports.port(name="p1", location="amit.buh.is.keysight.com/1/2")[-1]
+port_2 = config.ports.port(name="p2", location="amit.buh.is.keysight.com/2/2")[-1]
+#port_3 = config.ports.port(name="p3", location="tomini.buh.is.keysight.com/2/2")[-1]
 
-(d1, d2) = config.devices.device(name="d1").device(name="d2")
+(d1, d2,) = config.devices.device(name="d1").device(name="d2")
 (e1,) = d1.ethernets.ethernet(name="d1.e1")
-#(e1,e3) = d1.ethernets.ethernet(name="d1.e1").ethernet(name="d1.e3")
+
 e1.connection.port_name = "p1"
 e1.mac = "70:9C:91:69:00:00"
 e1.step = "00:00:00:00:00:01" 
 e1.count = 1
-#e3.mac = "00:00:01:00:00:03"
-#e3.step = "00:00:00:00:00:01" 
-#e3.count = 1
 
 (e2,) = d2.ethernets.ethernet(name="d2.e2")
 e2.connection.port_name = "p2"
@@ -31,40 +29,28 @@ e2.mac = "7C:5D:68:26:00:00"
 (vlan1,) = e1.vlans.vlan(name = "vlan1")
 vlan1.id = 1
 vlan1.priority = 1
-vlan1.tpid = "x8100"
-#(vlan3,) = e3.vlans.vlan(name = "vlan3")
-#vlan3.id = 1
-#vlan3.priority = 1
-#vlan3.tpid = "x8100"
+vlan1.tpid = 'x9100'
 (vlan2,) = e2.vlans.vlan(name = "vlan2")
 vlan2.id = 1
 vlan2.priority = 1
-vlan2.tpid = "x8100"
+vlan2.tpid = 'x9100'
 (ip1,) = e1.ipv4_addresses.ipv4(name="e1.ipv4")
 ip1.address = "173.173.173.10"
 ip1.gateway = "0.0.0.0"
 ip1.step = "0.0.0.1"
 ip1.count = 1
-#(ip3,) = e3.ipv4_addresses.ipv4(name="e3.ipv4")
-#ip3.address = "173.173.173.20"
-#ip3.gateway = "0.0.0.0"
-#ip3.step = "0.0.0.1"
-#ip3.count = 1
 (ip2,) = e2.ipv4_addresses.ipv4(name="e2.ipv4")
 ip2.address = "173.173.173.30"
 ip2.gateway = "0.0.0.0"
 
-
-
 #TCP/UDP configs
-
 (t1,) = d1.tcps.tcp(name="Tcp1")
 t1.ip_interface_name = ip1.name
 t1.adjust_tcp_buffers = False
 t1.keep_alive_time = 7000
 t1.keep_alive_interval = 60
-t1.receive_buffer_size = 8062
-t1.transmit_buffer_size = 8062
+t1.receive_buffer_size = 1024
+t1.transmit_buffer_size = 1024
 t1.retransmission_minimum_timeout = 180
 t1.retransmission_maximum_timeout = 1000
 t1.minimum_source_port = 80
@@ -102,7 +88,6 @@ t1.maximum_time_wait_buckets = 1800
 t1.low_latency = 0
 t1.minimum_rmem = 4096
 t1.window_scale = 2
-#t1.wmem_default = 262144
 t1.minimum_wmem = 4096
 t1.stdurg = False
 t1.maximum_syn_backlog = 1024
@@ -115,24 +100,12 @@ t1.mem_pressure = 32768
 t1.moderate_receive_buffer = 0
 t1.no_metrics_save = True
 t1.retrans_collapse = True
-#t1.rmem_default = 262144
 t1.mem_high = 49152
 t1.vegas_gamma = 2
 t1.fack = True
 t1.bic_low_window = 14
 t1.app_win = 31
 t1.keep_alive_probes = 9
-
-
-
-
-
-
-# t1.rmem_default = 65536
-# t1.transmit_buffer_size = 65536
-# t1.time_wait_recycle = False
-# t1.time_wait_rfc1323_strict = True
-# t1.keep_alive_time = 600
 
 (t2,) = d2.tcps.tcp(name="Tcp2")
 t2.ip_interface_name = ip2.name
@@ -158,6 +131,7 @@ http_1.enable_integrity_check_support = False
 http_1.type_of_service = 0
 http_1.high_perf_with_simulated_user =  False
 (http_client,) = http_1.clients.client()
+http_client.name = "Http1Client1"
 http_client.cookie_jar_size = 100
 http_client.version = "1"
 http_client.cookie_reject_probability = True
@@ -169,8 +143,8 @@ http_client.keep_alive = False
 http_client.max_sessions = 3
 http_client.max_streams = 1
 http_client.max_pipeline = 1
-http_client.max_persistent_requests = 3
-http_client.exact_transactions = 0
+http_client.max_persistent_requests = 0
+http_client.exact_transactions = 1
 http_client.follow_http_redirects = False
 http_client.enable_decompress_support = False
 http_client.enable_per_conn_cookie_support = False
@@ -188,13 +162,11 @@ http_client.enable_achieve_cc_first = False
 http_client.enable_traffic_distribution_for_cc = False
 http_client.browser_emulation_name = "Browser1"
 
-#http_1.client(endpoints_allow_inbound)
+# http_client1.name = "Http1Client2"
+# http_client1.cookie_jar_size = 100
+# http_client1.version = "1"
+# http_client1.cookie_reject_probability = True
 
-# get1 = http1.client.methods.add("get")
-# get1.page = "./1b.html"
-# get1.destination = "10.0.10.1" #real http server ip or emulated http object  get1.destination = "http2:80"
-#for http server emulation
-#get1.destination = http_2.name 
 (http_2,) = d2.https.http(name="HTTP2")
 http_2.tcp_name = t2.name		#UDP configs can be mapped http.transport = udp_2.name
 http_2.enable_tos = False
@@ -213,9 +185,9 @@ http_2.tcp_close_option = "v10"
 http_2.enable_integrity_check_support = False
 http_2.type_of_service = 0 
 http_2.high_perf_with_simulated_user = False		#UDP configs can be mapped http.transport = udp_2.name
-#http_2.server(endpoints_allow_outbound)
+
 (http_server,) = http_2.servers.server()
-http_server.name = "httpserver1"
+#http_server.name = "Http1Server1"
 http_server.rst_timeout = 100
 http_server.enable_http2 = False
 http_server.port = 80
@@ -230,112 +202,88 @@ http_server.enable_md5_checksum = False
 
 (get_a,delete_a) = http_client.methods.method().method()
 (get1,) = get_a.get.get()
-get1.destination = "Traffic2_HTTPServer1:80" 
+get1.destination = "Traffic2_Http1Server1:80" 
 get1.page = "./1b.html"
-#get1.destination = "Traffic2_HTTPServer1:80" #real http server ip or emulated http object  get1.destination = "http2:80"
-#for http server emulation
-#get1.destination = http_2.name   
-# (post1,) = post1_a.post.post()
-# post1.destination = "Traffic2_HTTPServer1:80" 
-# post1.page = "./1b.html"
+get1.name_value_args =""
 (delete1,) = delete_a.delete.delete()
-delete1.destination = "Traffic2_HTTPServer1:80" 
+delete1.destination = "Traffic2_Http1Server1:80"
 delete1.page = "./1b.html"
+
+# (get_b,delete_b,post1_b) = http_client1.methods.method().method().method()
+# (get2,) = get_b.get.get()
+# get2.destination = "Traffic2_Http1Server1:80" 
+# get2.page = "./1b.html" 
+# (post2,) = post1_b.post.post()
+# post2.destination = "Traffic2_Http1Server1:80" 
+# post2.page = "./1b.html"
+# post2.name_value_args = "sample"
+# (delete2,) = delete_b.delete.delete()
+# delete2.destination = "Traffic2_Http1Server1:80" 
+# delete2.page = "./1b.html"
+
 
 
 tp = config.trafficprofile.trafficprofile()
-#tp[0].objective_type = ["simulated_user", "throughput_kbps", "throughput_mbps", "concurrent_connections", "connection_per_sec", "transactions_per_sec","connection_attempts_per_sec"]
-tp[0].objective_type = ['throughput_mbps', 'concurrent_connections']
-tp[0].objective_value = [102]
+#For Http1Client1 
+tp[0].app = [http_client.name]
+tp[0].objective_type = ["connection_per_sec", "simulated_user"]
+tp[0].objective_value = [60, 80]
 tp[0].timeline = ['Timeline1']
-
 obj_type = tp[0].objectives.objective()
-# obj_type[0].throughput_kbps.enable_controlled_user_adjustment = True
-# obj_type[0].throughput_kbps.sustain_time=5
-# obj_type[0].throughput_kbps.ramp_down_time = 10
-# obj_type[0].simulated_user.ramp_up_value = 15
-# obj_type[0].simulated_user.sustain_time = 5
-# obj_type[0].simulated_user.ramp_down_time =11
+obj_type[0].connection_per_sec.enable_controlled_user_adjustment = True
+obj_type[0].connection_per_sec.sustain_time=14
+obj_type[0].connection_per_sec.ramp_down_time=12
+obj_type[0].connection_per_sec.time_to_first_iter = 3
+obj_type[0].connection_per_sec.iteration = 4
+# #For simulated_user
+# obj_type[0].simulated_user.ramp_up_value = 5
+# obj_type[0].simulated_user.sustain_time = 7
+# obj_type[0].simulated_user.ramp_down_time =12
 # obj_type[0].simulated_user.enable_controlled_user_adjustment = True
-# obj_type[0].concurrent_connections.enable_controlled_user_adjustment = True
-# obj_type[0].concurrent_connections.sustain_time=6
-# obj_type[0].concurrent_connections.ramp_down_time=12
-# obj_type[0].concurrent_connections.ramp_down_value=10
-# obj_type[0].connection_per_sec.enable_controlled_user_adjustment = True
-# obj_type[0].connection_per_sec.sustain_time=14
-# obj_type[0].connection_per_sec.ramp_down_time=12
-# obj_type[0].transactions_per_sec.enable_controlled_user_adjustment = True
-# obj_type[0].transactions_per_sec.sustain_time=10
-# obj_type[0].transactions_per_sec.ramp_down_time=11
-# obj_type[0].connection_attempts_per_sec.enable_controlled_user_adjustment = True
-# obj_type[0].connection_attempts_per_sec.sustain_time=12
-# obj_type[0].connection_attempts_per_sec.ramp_down_time=13
-obj_type[0].throughput_mbps.enable_controlled_user_adjustment = True
-obj_type[0].throughput_mbps.sustain_time=6
-obj_type[0].throughput_mbps.ramp_down_time = 11
+# obj_type[0].simulated_user.time_to_first_iter = 6
+# obj_type[0].simulated_user.iteration = 5
+# obj_type[0].simulated_user.iteration_time = 81
+# obj_type[0].simulated_user.ramp_up_interval = 2
+# obj_type[0].simulated_user.ramp_up_type= "users_intervals"
+# obj_type[0].simulated_user.ramp_down_value= 13
 
 
-(segment1,segment2) = tp[0].segment.segment().segment()
-segment1.name = "Linear segment1"
-segment1.start = 0
-segment1.duration = 10
-segment1.rate = 10
-segment1.target = 100
 
-# obj_type = tp[0].objectives.objective()
-# obj_type[0].simulated_user.ramp_up_value = 15
-# obj_type[0].simulated_user.sustain_time = 5
-# obj_type[0].simulated_user.ramp_down_time =11
-# obj_type[0].throughput_kbps.enable_controlled_user_adjustment = True
-# obj_type[0].throughput_kbps.sustain_time=5
-# obj_type[0].throughput_kbps.ramp_down_time = 10
-# obj_type[0].throughput_mbps.enable_controlled_user_adjustment = True
-# obj_type[0].throughput_mbps.sustain_time=6
-# obj_type[0].throughput_mbps.ramp_down_time = 11
-# obj_type[0].concurrent_connections.enable_controlled_user_adjustment = True
-# obj_type[0].concurrent_connections.sustain_time=6
-# obj_type[0].concurrent_connections.ramp_down_time=12
-# obj_type[0].concurrent_connections.ramp_down_value=13
-# obj_type[0].connection_per_sec.enable_controlled_user_adjustment = True
-# obj_type[0].connection_per_sec.sustain_time=14
-# obj_type[0].connection_per_sec.ramp_down_time=12
-#obj_type[0].connection_per_sec.ramp_down_value=15
+# # #For Http1Client2 
+# tp[1].app = [http_client1.name]
+# tp[1].objective_type = ["simulated_user", "connection_per_sec", "transactions_per_sec"]
+# tp[1].objective_value = [50, 90, 85]
+# tp[1].timeline = ['Timeline3']
+# obj_type1 = tp[1].objectives.objective()
+# obj_type1[0].simulated_user.ramp_up_value = 10
+# obj_type1[0].simulated_user.sustain_time = 7
+# obj_type1[0].simulated_user.ramp_down_time =12
+# obj_type1[0].simulated_user.enable_controlled_user_adjustment = True
+# obj_type1[0].simulated_user.time_to_first_iter = 6
+# obj_type1[0].simulated_user.iteration = 5
+# obj_type1[0].simulated_user.iteration_time = 81
+# obj_type1[0].simulated_user.ramp_up_type= "max_pending_user"
+# obj_type1[0].simulated_user.ramp_down_value= 13
+
+
+
+tm1=tp[0].trafficmap.trafficmap()
+#tm1[0].port_map_policy_name  = "port_pairs"
+
+#tm2=tp[0].trafficmap.trafficmap()
+tm1[0].port_map_policy_name  = "custom"
+cust1 = tm1[0].custom.custom()
+cust1[0].name = "samplemap"
+mt1 = cust1[0].mapping_type
+mt1.vlan_range_pairs.enable =True
+mt1.vlan_range_pairs.destination_id = 1
 
 response = api.set_config(config)
 print(response)
-api.ixload_configure("post", "url", "data")
 
-# cs = api.control_state()
-# cs.app.state = 'start' #cs.app.state.START 
-# response1 = api.set_control_state(cs) 
-# print(response1)
-# cs.app.state = 'stop' #cs.app.state.START 
-# api.set_control_state(cs)   
-
-# tp1 = config.trafficprofile.trafficprofile()
-# tp = tp1.trafficmap.name = "port pairs/full mesh/custum"
-# custom1 = tp1.trafficmap.customs.custom()
-
-# mt = custom1.mapping_type.range_pair 
-# mt.sources = [1,2] 
-# mt.destination = [2,1]
-
-# mt = custom1.mapping_type.mesh
-# mt.sources = True
-
-# tp[0].objective_value = [102]
-# tp[0].timeline = ['Timeline1']
-
-# obj_type = tp[0].objectives.objective()
-# tp[0].custom = ["Ipv4_traffic_map", "Ipv6_traffic_map"]
-# tp[0].custom.Ipv4_traffic_map.name = "Submap1"
-# tp[0].custom.Ipv4_traffic_map.enable_ip_mesh = True
-# tp[0].custom.Ipv4_traffic_map.mesh_type = "ip_range_mesh"
-# src = tp[0].custom.Ipv4_traffic_map.sources()
-# src.enable = True
-# src.vlan_id =1
-# src.destination_id = 1         
-
-
-
-
+cs = api.control_state()
+cs.app.state = 'start'  # cs.app.state.START
+response1 = api.set_control_state(cs)
+print(response1)
+cs.app.state = 'stop'  # cs.app.state.START
+api.set_control_state(cs)

@@ -5,9 +5,7 @@ import logging
 #import ixrestutils as http_transport
 from collections import namedtuple
 import sys
-
 #sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
-
 import snappi
 import snappi_ixload.ixrestutils as http_transport
 from snappi_ixload.interface import interfaces
@@ -23,19 +21,18 @@ from snappi_ixload.traffic_map import trafficmap_config
 #from protocols import protocols
 #from snappi_ixload.chassis import chassis
 #from stats import stats
-from stats import stats_config
+from snappi_ixload.stats import stats_config
 
 class Api(snappi.Api):
     """
     """
-    def __init__(self,
-                 host,
-                 version, 
-                 username='admin',
-                 password='admin',
-                 gateway_port = 8080,
-                 log_level='info',
-                 **kwargs):
+    def __init__(self, **kwargs):
+                #  host,
+                #  version = "10.10.100.2", 
+                #  username='admin',
+                #  password='admin',
+                #  gateway_port = 8080,
+                #  log_level='info',
         """Create a session
         - address (str): The ip address of the TestPlatform to connect to
         where test sessions will be created or connected to.
@@ -43,17 +40,19 @@ class Api(snappi.Api):
         - username (str): The username to be used for authentication
         - password (str): The password to be used for authentication
         """
-        super().__init__(**kwargs)
+        super(Api, self).__init__()
+        #super().__init__(**kwargs)
         #    host='https://127.0.0.1:11009' if host is None else host
         #)
-        self._host = host
+        self._host = kwargs.get("location")
+        
         self._address, self._port = self._get_addr_port(self._host)
-        self._username = username
-        self._password = password
+        self._username = "admin"
+        self._password = "admin"
         self._config_url = {}
         
-        self.ixload_version = version
-        self._gateway_port = gateway_port
+        self.ixload_version = kwargs.get("version")
+        self._gateway_port = self._port
         self._l4config = None
         self._assistant = None
         self._config_type = self.config()
@@ -79,7 +78,6 @@ class Api(snappi.Api):
     def _get_addr_port(self, host):
         items = host.split('/')
         items = items[-1].split(':')
-
         addr = items[0]
         if len(items) == 2:
             return addr, items[-1]
@@ -96,13 +94,13 @@ class Api(snappi.Api):
     def log_level(self):
         return self._log_level
         
-    def _request_detail(self):
+    def _request_detail(self, msg):
         request_detail = snappi.Warning()
         errors = self._errors
         warnings = list()
         if errors:
             Snappil47Exception(errors)
-        warnings.append("")
+        warnings.append(msg)
         request_detail.warnings = warnings
         return request_detail
     
@@ -121,13 +119,14 @@ class Api(snappi.Api):
             self._device_encap = {}
             self._ixl_objects = {}
             self._connect()
-            
+            self.test_state = False
             #self._ip_list = self.common.get_protocol_ip(config)
             self._l47config = config
             self.interfaces.config()
             self.tcp.config()
             self.http_sr.config()
             self.http_cl.config()
+            
             self.port.config()
             self.objective_con.config()
             self.trafficmap.config()
@@ -135,7 +134,7 @@ class Api(snappi.Api):
         except Exception as err:
             self.logger.info(f"error:{err}")
             raise Snappil47Exception(err)
-        return self._request_detail()
+        return self._request_detail("Configuration is successfull")
     
     def add_error(self, error):
         """Add an error to the global errors"""
@@ -143,6 +142,16 @@ class Api(snappi.Api):
             self._errors.append("%s %s" % (type(error), str(error)))
         else:
             self._errors.append(error)
+    
+    def ixload_configure(self, method, url, data):
+        url = self._ixload + url
+        method = method.upper()
+        reply = self._request(method, url, data)
+        if not reply:
+             raise Exception(reply.text)
+        self.logger.info("Cofiguration applied :%s" % (reply))
+        return reply
+        
 
     def get_config(self):
         return self._l47config
@@ -155,48 +164,73 @@ class Api(snappi.Api):
                 reply = self._request('POST', url, payload, option=1)
                 if not reply.ok:
                     raise Exception(reply.text)
-                self.logger.info("Cofiguration applied :%s" % (reply))
+                self.logger.info("Configuration applied :%s" % (reply))
                 self._wait_for_action_to_finish(reply, url)
                 url = "%sixload/test/operations/runTest" % (self._ixload)
                 payload = {}
-                
                 reply = self._request('POST', url, payload, option=1)
                 if not reply.ok:
                     raise Exception(reply.text)
-                #self._wait_for_action_to_finish(reply, url)
-                msg = (
-                        "Traffic are in running state. "
-                        "Please stop those using set_control_state"
-                    )
-                #self.add_error(msg)
-                self.warning(msg)
-                
+                self._wait_for_action_to_finish(reply, url)
+                test_started = True
+                while test_started:
+                    state = self.get_current_state()
+                    if state.lower() == "unconfigured" or state.lower() == "cleaning":
+                        test_started = False
+                        raise Exception( "Error in starting the test - Test is in %s state" % state)
+                    elif state.lower() == "running" or state.lower() == "starting run":
+                        self.test_state = True
+                        test_started  = False
+                        msg = (
+                            "Traffic are in running state. "
+                            "Please stop those using set_control_state"
+                        )
+                        self.warning(msg)
+                    else:
+                        test_started = True
             elif config.app.state == "stop":
                 url = "%s/ixload/test/operations/gracefulStopRun" % (self._ixload)
                 payload = {}
                 reply = self._request('POST', url, payload, option=1)
                 self._wait_for_action_to_finish(reply, url)
+                msg = (
+                            "Traffic is stopped now. "
+                            "Please start those using set_control_state"
+                        )
             elif config.app.state == "abort":
                 url = "%s/ixload/test/operations/abortAndReleaseConfigWaitFinish" % (self._ixload)
                 payload = {}
                 reply = self._request('POST', url, payload, option=1)
                 self._wait_for_action_to_finish(reply, url)
+                msg = (
+                            "Traffic is aborted now. "
+                            "Please start those using set_control_state"
+                        )
         except Exception as err:
             self.logger.info(f"error:{err}")
             raise Snappil47Exception(err)
-        return self._request_detail()
+        return self._request_detail(msg)
     
     def get_metrics(self, req):
-        try:
+        try: 
             metric_res = self.metrics_response()
             if req.choice == "httpclient":
-                metric_res=self.stats.get_stats(name="HTTPClient", metric_obj = req, metric_res=metric_res)
+                if req.httpclient.end_test:
+                    metric_res=self.stats.get_stats(name="HTTPClient", metric_obj = req, metric_res=metric_res, test_state = self.test_state)
+                else:
+                    metric_res=self.stats.poll_get_stats(name="HTTPClient", metric_obj = req, metric_res=metric_res)        
             if req.choice == "httpserver":
-                metric_res=self.stats.get_stats(name="HTTPServer", metric_obj = req, metric_res=metric_res)
+                if req.httpserver.end_test:
+                    metric_res=self.stats.get_stats(name="HTTPServer", metric_obj = req, metric_res=metric_res, test_state = self.test_state)
+                else:
+                    metric_res=self.stats.poll_get_stats(name="HTTPServer", metric_obj = req, metric_res=metric_res)
+            self.test_state = False
         except Exception as err:
             self.logger.info(f"error:{err}")
             raise Snappil47Exception(err)
         return metric_res
+    
+    
         
     def _apply_config(self):
         """
@@ -253,7 +287,7 @@ class Api(snappi.Api):
     def sessionAssistance(self):
         '''
         '''
-        self.connection = http_transport.get_connection(self._host, self._gateway_port, http_redirect=True)
+        self.connection = http_transport.get_connection(self._address, self._gateway_port, http_redirect=True)
         session_url = "sessions"
         data = {"ixLoadVersion": self.ixload_version}
         data = json.dumps(data)

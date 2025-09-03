@@ -1,7 +1,7 @@
 import json
 import re
 import time
-from snappi_ixload.timer import Timer
+from .timer import Timer
 
 
 class client_config():
@@ -140,6 +140,9 @@ class client_config():
                 response = self._api._request('POST', protocol_url, options)
                 protocol_url = protocol_url+response
                 #self._api._config_url[server.server.name] = protocol_url
+                self._api._config_url[http_client.name] = protocol_url
+                payload = {'name' : http_client.name}
+                response = self._api._request('PATCH', protocol_url, payload)
                 payload = self._api._set_payload(http, client_config._HTTP_CLIENT)
                 response = self._api._request('PATCH', protocol_url+"/agent", payload)
                 payload = self._api._set_payload(http_client, client_config._HTTP_CLIENTS)
