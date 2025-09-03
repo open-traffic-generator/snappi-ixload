@@ -1,5 +1,4 @@
 import sys
-sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
 import snappi
 import time
 
