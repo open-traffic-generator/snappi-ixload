@@ -5,7 +5,8 @@ import os
 import setuptools
 
 pkg_name = "snappi_ixload"
-version = "0.0.7"
+version = "0.0.8"
+
 
 
 # read long description from readme.md
