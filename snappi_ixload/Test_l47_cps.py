@@ -400,7 +400,6 @@ def run_cps_search(api, initial_cps_value, logger):
         req.httpclient.stat_name = ["Connection Rate"]
         # req.httpclient.stat_name = ["HTTP Simulated Users", "HTTP Concurrent Connections", "HTTP Connect Time (us)", "TCP Connections Established", "HTTP Bytes Received"]
         # req.httpclient.all_stats = True # for  all stats
-        import pdb;pdb.set_trace()
         res = api.get_metrics(req).httpclient_metrics
         #print("**** res = {} ****".format(res))
         print("**** res = {} ****".format(res))

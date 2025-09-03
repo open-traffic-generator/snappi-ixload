@@ -6,8 +6,8 @@ import time
 api = snappi.api(location="localhost:8080", ext="ixload", verify=False, version="10.00.0.152")
 config = api.config()
 
-port_1 = config.ports.port(name="p1", location="10.39.65.156/2/11")[-1]
-port_2 = config.ports.port(name="p2", location="10.39.65.156/2/12")[-1]
+port_1 = config.ports.port(name="p1", location="amit.buh.is.keysight.com/1/10")[-1]
+port_2 = config.ports.port(name="p2", location="amit.buh.is.keysight.com/2/10")[-1]
 #port_1 = config.ports.port(name="p1", location="10.39.65.156/2/1")[-1]
 #port_2 = config.ports.port(name="p2", location="10.39.65.156/2/2")[-1]
 
@@ -148,6 +148,7 @@ req = api.metrics_request()
 req.choice= "httpclient"
 req.httpclient.stat_name = ["TCP Connections Established",
                             "HTTP Bytes Received"]
+#end_test is added to support real time stats if end_test is True then stats will return till the end of the test
 req.httpclient.end_test = False
 res = api.get_metrics(req).httpclient_metrics
 print(res)
