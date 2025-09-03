@@ -1,6 +1,6 @@
 import json
 import re
-from timer import Timer
+from .timer import Timer
 
 
 class network(object):

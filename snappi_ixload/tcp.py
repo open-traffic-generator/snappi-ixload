@@ -1,8 +1,8 @@
 import json
 import re
 import time
-from timer import Timer
-from common import Common
+from .timer import Timer
+from .common import Common
 
 class tcp_config(Common):
     """Transforms OpenAPI objects into IxNetwork objects
@@ -108,19 +108,17 @@ class tcp_config(Common):
         """
         
         for device in self._devices_config:
-            #
             self._update_tcp_config(device)
             
     def _update_tcp_config(self, device):
         """Add any scenarios to the api server that do not already exist
         """
-        #
         for tcp in device.tcps:
             url = self._api._config_url.get(tcp.ip_interface_name)
-            #url = self._api._config_url.get(ip_object)
             url = self.get_community_url(url)
             tcp_child_url = "%snetwork/globalPlugins" % url
             response_list = self._api._request('GET', tcp_child_url)
+            
             for index in range(len(response_list)):
                 if response_list[index]['itemType'] == 'TCPPlugin':
                     tcp_url = "%s/%s" % (tcp_child_url, response_list[index]['objectID'])
@@ -131,12 +129,3 @@ class tcp_config(Common):
                     response = self._api._request('PATCH', tcp_url, payload)
                     self._api._config_url[tcp.name] = tcp_url
             
-
-    # def _delete_ethernet(self, network):
-    #     """delete any scenarios to the api server that do not already exist
-    #     """
-    #     for ethernet in network.ethernet:
-    #         url1, url2 = self._api._get_url(network.url , ethernet.url)
-    #         response = self._api._request('GET', url1, option=1)
-    #         payload = {'objectID':response[0]['objectID']}
-    #         response = self._api._request('DELETE', url1, payload)

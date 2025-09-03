@@ -1,7 +1,7 @@
 import json
 import re
 import time
-from snappi_ixload.timer import Timer
+from .timer import Timer
 
 class port(object):
     """
@@ -27,11 +27,16 @@ class port(object):
         for device in self._config.devices:
             ethernet = device.ethernets[0]
             location = self._get_chasiss(ethernet.connection.port_name, self._config.ports)
+            #import pdb;pdb.set_trace()
             if location :
                 if not self.is_chassis_connected(location):
                     self._add_chassis(location)
-                for ip in ethernet.ipv4_addresses:
-                    self._assign_ports(location, ip.name)
+                if ethernet.ipv4_addresses:
+                    for ip in ethernet.ipv4_addresses:
+                        self._assign_ports(location, ip.name)
+                elif ethernet.ipv6_addresses:
+                    for ip in ethernet.ipv6_addresses:
+                        self._assign_ports(location, ip.name)
             else:
                 pass
     

@@ -5,6 +5,7 @@ import logging
 #import ixrestutils as http_transport
 from collections import namedtuple
 import sys
+#sys.path.insert(0, "C:\\Users\\waseebai\\Documents\\project\\GitHub\\snappi\\artifacts\\snappi")
 import snappi
 import snappi_ixload.ixrestutils as http_transport
 from snappi_ixload.interface import interfaces
@@ -118,13 +119,14 @@ class Api(snappi.Api):
             self._device_encap = {}
             self._ixl_objects = {}
             self._connect()
-            
+            self.test_state = False
             #self._ip_list = self.common.get_protocol_ip(config)
             self._l47config = config
             self.interfaces.config()
             self.tcp.config()
             self.http_sr.config()
             self.http_cl.config()
+            
             self.port.config()
             self.objective_con.config()
             self.trafficmap.config()
@@ -145,6 +147,7 @@ class Api(snappi.Api):
         url = self._ixload + url
         method = method.upper()
         reply = self._request(method, url, data)
+        import pdb;pdb.set_trace()
         if not reply:
              raise Exception(reply.text)
         self.logger.info("Cofiguration applied :%s" % (reply))
@@ -156,14 +159,13 @@ class Api(snappi.Api):
 
     def set_control_state(self, config):
         try:
-            msg = None
             if config.app.state == "start":
                 url = self._ixload + "ixload/test/operations/applyConfiguration"
                 payload = {}
                 reply = self._request('POST', url, payload, option=1)
                 if not reply.ok:
                     raise Exception(reply.text)
-                self.logger.info("Cofiguration applied :%s" % (reply))
+                self.logger.info("Configuration applied :%s" % (reply))
                 self._wait_for_action_to_finish(reply, url)
                 url = "%sixload/test/operations/runTest" % (self._ixload)
                 payload = {}
@@ -171,39 +173,65 @@ class Api(snappi.Api):
                 if not reply.ok:
                     raise Exception(reply.text)
                 self._wait_for_action_to_finish(reply, url)
-                msg = (
-                        "Traffic are in running state. "
-                        "Please stop those using set_control_state"
-                    )
-                #self.add_error(msg)
-                self.warning(msg)
-                
+                test_started = True
+                while test_started:
+                    state = self.get_current_state()
+                    if state.lower() == "unconfigured" or state.lower() == "cleaning":
+                        test_started = False
+                        raise Exception( "Error in starting the test - Test is in %s state" % state)
+                    elif state.lower() == "running" or state.lower() == "starting run":
+                        self.test_state = True
+                        test_started  = False
+                        msg = (
+                            "Traffic are in running state. "
+                            "Please stop those using set_control_state"
+                        )
+                        self.warning(msg)
+                    else:
+                        test_started = True
             elif config.app.state == "stop":
                 url = "%s/ixload/test/operations/gracefulStopRun" % (self._ixload)
                 payload = {}
                 reply = self._request('POST', url, payload, option=1)
                 self._wait_for_action_to_finish(reply, url)
+                msg = (
+                            "Traffic is stopped now. "
+                            "Please start those using set_control_state"
+                        )
             elif config.app.state == "abort":
                 url = "%s/ixload/test/operations/abortAndReleaseConfigWaitFinish" % (self._ixload)
                 payload = {}
                 reply = self._request('POST', url, payload, option=1)
                 self._wait_for_action_to_finish(reply, url)
+                msg = (
+                            "Traffic is aborted now. "
+                            "Please start those using set_control_state"
+                        )
         except Exception as err:
             self.logger.info(f"error:{err}")
             raise Snappil47Exception(err)
         return self._request_detail(msg)
     
     def get_metrics(self, req):
-        try:
+        try: 
             metric_res = self.metrics_response()
             if req.choice == "httpclient":
-                metric_res=self.stats.get_stats(name="HTTPClient", metric_obj = req, metric_res=metric_res)
+                if req.httpclient.end_test:
+                    metric_res=self.stats.get_stats(name="HTTPClient", metric_obj = req, metric_res=metric_res, test_state = self.test_state)
+                else:
+                    metric_res=self.stats.poll_get_stats(name="HTTPClient", metric_obj = req, metric_res=metric_res)        
             if req.choice == "httpserver":
-                metric_res=self.stats.get_stats(name="HTTPServer", metric_obj = req, metric_res=metric_res)
+                if req.httpserver.end_test:
+                    metric_res=self.stats.get_stats(name="HTTPServer", metric_obj = req, metric_res=metric_res, test_state = self.test_state)
+                else:
+                    metric_res=self.stats.poll_get_stats(name="HTTPServer", metric_obj = req, metric_res=metric_res)
+            self.test_state = False
         except Exception as err:
             self.logger.info(f"error:{err}")
             raise Snappil47Exception(err)
         return metric_res
+    
+    
         
     def _apply_config(self):
         """
